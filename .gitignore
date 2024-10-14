@@ -1,0 +1,9 @@
+venv
+testing
+.env
+PythonGrpc
+TaskMaster
+tasks
+
+
+__pycache__
