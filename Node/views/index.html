@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <title>Task Offloading</title>
+</head>
+<body>
+  <div id="message"></div>
+	<div class="container">
+		<div class="row">
+			<div class="col-md-6 m-auto">
+				<h1 class="my-4">Let's upload Tasks</h1>
+				<form action="/upload" method="post" enctype="multipart/form-data" >
+					<div class="custom-file mb-3">
+						<input type="file" class="custom-file-input" name="files" id="files" multiple onchange="readMultipleFiles(this.files)">
+						<div class="form-group" >
+							<label for="conversionType">Choose an option:</label>
+							<div style="display: flex; align-items: center;">
+								<input type="radio" id="pdfToWord" name="conversionType" value="pdfToWord" required>
+								<label for="pdfToWord">PDF to Word</label>
+							</div>
+							<div style="display: flex; align-items: center;">
+								<input type="radio" id="pdfCompress" name="conversionType" value="pdfCompress" required>
+								<label for="pdfCompress">PDF Compress</label>
+							</div>
+							<div style="display: flex; align-items: center;">
+								<input type="radio" id="ocrForImage" name="conversionType" value="ocrForImage" required>
+								<label for="ocrForImage">OCR for Image</label>
+							</div>
+						</div>
+						
+						<label class="custom-file-label" for="files" id="file-label">Choose files</label>
+					</div>
+					<input type="submit" value="Submit" class="btn btn-primary btn-block">
+				</form>
+				<form id="scheduleForm" onsubmit="scheduleTasks()">
+					<button type="submit">Schedule Tasks</button>
+				  </form> 
+				<hr>
+				<div id="files-list" >
+          
+					<div style="display: flex; flex-wrap: wrap;">
+						<!-- Files will be dynamically inserted here -->
+					</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+	  <script src="/controllers/fetch.js"></script>
+    <script src="/controllers/script.js"></script>
+	
+</body>
+
+</html>
