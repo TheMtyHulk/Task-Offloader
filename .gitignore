@@ -4,6 +4,7 @@ testing
 PythonGrpc
 TaskMaster
 tasks
-
+# Ignore node_modules directory
+node_modules/
 
 __pycache__
