@@ -23,7 +23,11 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
 // DB
-const mongoURI = "mongodb://localhost:27017/taskoffloader";
+require('dotenv').config();
+const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/taskoffloader";
+if (!mongoURI) {
+  throw new Error("MONGO_URI is not defined in the environment variables");
+}
 
 // connection
 const conn = mongoose.createConnection(mongoURI, {
