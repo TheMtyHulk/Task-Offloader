@@ -1,0 +1,1 @@
+PS D:\Task-Offloader> python -m grpc_tools.protoc --proto_path=. ./cooedinator.proto --python_out=. --grpc_python_out=.                                      

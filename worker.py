@@ -1,8 +1,9 @@
 import grpc
 import time
-import coordinator_pb2
-import coordinator_pb2_grpc
-# from threading import 
+from proto_buffs import coordinator_pb2
+from proto_buffs import coordinator_pb2_grpc
+# 
+
 def run_worker(worker_id):
     channel = grpc.insecure_channel('localhost:50051')
     stub = coordinator_pb2_grpc.CoordinatorServiceStub(channel)
@@ -18,7 +19,7 @@ def run_worker(worker_id):
                 print(f"Worker {worker_id} received task: {response.taskId}")
                 # Process the task here
             else:
-                print(f"Worker {worker_id} received no task.")
+                print(f"Worker {worker_id} received no task.",response.ack)
     except grpc.RpcError as e:
         print(f"Worker {worker_id} encountered an error: {e}")
 

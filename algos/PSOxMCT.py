@@ -3,13 +3,13 @@ from pymongo import MongoClient
 import os
 
 class Task_Assignment_Calc:
-    def __init__(self,num_vms,undonetasks:list) -> None:
+    def __init__(self,num_vms,undonetasks:dict) -> None:
         
         self.num_vms = num_vms
-        client = MongoClient(os.getenv('MONGO_URL'))
-        self.db = client['taskmaster']
-        self.tasks=self.db['tasks']
-        files=self.db["fs.files"]
+        # client = MongoClient(os.getenv('MONGO_URL'))
+        # self.db = client['taskmaster']
+        # self.tasks=self.db['tasks']
+        # files=self.db["fs.files"]
 
         self.undonetasks=undonetasks
         
@@ -20,9 +20,9 @@ class Task_Assignment_Calc:
         
         estimated_task_times=[]
         
-        for ud in self.undonetasks:
-            for file in files.find({'_id':ud}):
-                estimated_task_times.append(round(file.get('length')/1024/1024,2))
+        for ud in self.undonetasks.values():
+            # for file in files.find({'_id':ud}):
+                estimated_task_times.append(ud)
                 
         estimated_task_times=np.array(estimated_task_times)
         
@@ -94,23 +94,18 @@ class Task_Assignment_Calc:
         adjusted_distribution, adjusted_time = self.pso_task_scheduling(num_tasks, actual_task_times, num_vms)
         return adjusted_distribution, adjusted_time
 
-    def get_distribution(self):
+    def get_distribution(self)->dict:
         dist = {}
         distribution = self.adjusted_distribution
+        _id=[x for x in self.undonetasks.keys()]
         for task_index, row in enumerate(distribution):
             for vm_index, assigned in enumerate(row):
                 if assigned == 1:
-                    task_id = self.undonetasks[task_index]
+                    task_id = _id[task_index]
                     dist[task_id] = vm_index
                     break  # Move to the next task after finding the assigned VM
-        print("initial distribution")
-        print(self.initial_distribution)
-        print()
         
-        print("adjusted distribution")
-        print(self.adjusted_distribution)
-        print()
-        # print(dist)
+        
         return dist
         
 

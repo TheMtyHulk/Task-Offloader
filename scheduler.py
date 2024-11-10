@@ -3,10 +3,16 @@ import gridfs
 from pymongo import MongoClient
 from uuid import uuid4
 from datetime import datetime
+from urllib.parse import quote_plus
+from dotenv import load_dotenv
 
 class scheduler:
+    
     def __init__(self):
-        client = MongoClient(os.getenv('MONGO_URL'))
+        load_dotenv()
+        mongo_uri = os.getenv('MONGO_URL')
+        client = MongoClient(mongo_uri)
+        
         self.db = client['taskmaster']
         # self.schedule("tasks")
     
