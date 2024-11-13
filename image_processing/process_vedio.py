@@ -6,13 +6,13 @@ import imageio
 # Load the YOLOv5 model
 # device = 'cuda' if torch.cuda.is_available() else 'cpu'
 # print(device)
-model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
+model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True,force_reload=True)
 # model = torch.hub.load('ultralytics/yolov5', 'yolov5n')
 
 # model = torch.hub.load('ultralytics/yolov5', 'yolov5n')
 
 # Initialize the video capture
-cap = cv2.VideoCapture('cars.mp4')
+cap = cv2.VideoCapture('people.mp4')
 if not cap.isOpened():
     print("Error: Could not open the video file.")
     exit()

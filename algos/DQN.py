@@ -12,7 +12,7 @@ from PSOxMCT import Task_Assignment_Calc
 
 pso_param={}
 # edge_task_ids=[ ]
-assignment_to_edge={}
+# assignment_to_edge={}
 
 class DQNAgent:
     def __init__(self, state_size, action_size):
@@ -119,7 +119,7 @@ def get_Task_Size(undone_tasks, files) -> dict:
             file_lengths[ud] = file_length_mb
     return file_lengths
 
-def edge_Task_Allotment(e ) -> dict:
+def edge_Task_Allotment(assignment:dict) -> dict:
     pass
 
 
@@ -146,8 +146,8 @@ if __name__ == '__main__':
             if not undone_tasks:
                 print("no tasks to offload")
                 time.sleep(5)
-                
                 continue
+            
             # Get task size
             task_size=get_Task_Size(undone_tasks,db['fs.files'])
             
@@ -185,13 +185,13 @@ if __name__ == '__main__':
             t=Task_Assignment_Calc(3,pso_param)
             dist=t.get_distribution()
             
-            for key,val in dist.items():
-                if val in assignment_to_edge:
-                    assignment_to_edge['E'+str(val)].append(key)
-                else:
-                    assignment_to_edge['E'+str(val)]=[key]
-                assignment_to_edge['E'+str(val)]=[key]
-            undone_tasks.clear()
+            # for key,val in dist.items():
+            #     if val in assignment_to_edge:
+            #         assignment_to_edge['E'+str(val)].append(key)
+            #     else:
+            #         assignment_to_edge['E'+str(val)]=[key]
+            #     assignment_to_edge['E'+str(val)]=[key]
+            # undone_tasks.clear()
                 
     except KeyboardInterrupt:
         print("Server stopped.")
