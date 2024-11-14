@@ -7,3 +7,4 @@ tasks
 t
 algos/DNQ__dummy.py
 __pycache__
+image_processing\yolov5n.pt
