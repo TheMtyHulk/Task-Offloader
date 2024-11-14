@@ -20,7 +20,7 @@ def connect_To_DB():
         try:
             client = MongoClient(mongo_uri)
             return client['taskmaster']
-            # break
+           
         except:
             print("Connection failed. Retrying...")
             time.sleep(3)
@@ -37,25 +37,26 @@ def get_Task_Size(undone_tasks, files) -> dict:
             file_lengths[ud] = file_length_mb
     return file_lengths
 
-def upload_to_local_file_queue(dist:dict) -> dict:
+def upload_allotment_to_queue(dist:dict) -> dict:
+    
     if not dist:
         return
-    if not os.path.exists('queue.db'):
-        open('queue.db', 'w').close()
-        
+    
     conn = sqlite3.connect('queue.db', check_same_thread=False)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS task_queue (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
     
     for key, val in dist.items():
-        c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (key, val))
+        if c.execute("SELECT * FROM task_queue WHERE TASK_ID=?", (key,)).fetchone():
+            continue
+        c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (key, 'E'+str(val)))
     conn.commit()
-
-    pass
+    return
+  
 
 
 if __name__ == '__main__':
-    # Simulation setup
+   
     state_size = 3  # [task_size, edge_computation_power, cloud_computation_power]
     action_size = 2  # 0 = Edge, 1 = Cloud
     task_count = 0
@@ -64,6 +65,13 @@ if __name__ == '__main__':
     
     db=connect_To_DB()
     tasks_cluster = db['tasks']
+    
+    if not os.path.exists('queue.db'):
+        open('queue.db', 'w').close()
+    
+    conn = sqlite3.connect('queue.db', check_same_thread=False)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS TASK_QUEUE (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
     
     edge_computation_power = 0.2
     cloud_computation_power = 1.0
@@ -112,13 +120,18 @@ if __name__ == '__main__':
                     pso_param[undone_tasks[i]] = task_size.get(undone_tasks[i])
                     
                 print(f"Task {undone_tasks[i]}: Allocated to {'Edge' if action == 0 else 'Cloud'}")
-
+            
+            # get pso distribution
             t=pso.Task_Assignment_Calc(3,pso_param)
             dist=t.get_distribution()
+            
             #upload the distribution to the local file queue i.e. sqlite
+            upload_allotment_to_queue(dist)
+    
             
-            upload_to_local_file_queue(dist)
-            
+            #never delete this shit
+            undone_tasks.clear()
+
                 
     except KeyboardInterrupt:
         print("Server stopped.")

@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import coordinator_pb2 as coordinator__pb2
+from . import coordinator_pb2 as coordinator__pb2
 
 GRPC_GENERATED_VERSION = '1.66.2'
 GRPC_VERSION = grpc.__version__
@@ -45,8 +45,7 @@ class CoordinatorServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def HeartbeatStream(self, request_iterator, context):
-        """rpc receives
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
