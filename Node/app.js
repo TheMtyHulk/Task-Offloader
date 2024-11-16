@@ -23,6 +23,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
 // DB
+// require('dotenv').config();
 require('dotenv').config();
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/taskoffloader";
 if (!mongoURI) {
@@ -48,6 +49,15 @@ conn.once("open", () => {
     bucketName: "uploads"
   });
 });
+
+// let gs;
+// conn.once("open", () => {
+//   // init stream
+//   gs = new mongoose.mongo.GridFSBucket(conn.db, {
+//     bucketName: ""
+//   });
+// });
+
 // Middleware to generate UUID for each file
 
 // Storage
@@ -61,10 +71,9 @@ const storage = new GridFsStorage({
         }
         const filename = file.originalname;
         const fileInfo = {
-          // Generate UUID for file ID
+          _id: uuidv4(), // Generate unique _id using uuid
           filename: filename,
           bucketName: "uploads",
-          
         };
         resolve(fileInfo);
       });
@@ -120,6 +129,9 @@ app.get("/", (req, res) => {
 
 app.post("/upload", upload.array("files", 10), (req, res) => {
   // filter out the files that exceeds the size limit of 16 mb
+  req.files.forEach(file => {
+    file._id = uuidv4(); // Generate unique id using uuid
+  });
   req.files = req.files.filter(file => file.size <= 16 * 1024 * 1024);
   const conversionType = req.body.conversionType;
 
@@ -146,7 +158,7 @@ app.post("/upload", upload.array("files", 10), (req, res) => {
   }
 });
 
-const uri = "mongodb://localhost:27017/taskoffloader";
+const uri = process.env.MONGO_URI || "mongodb://localhost:27017/taskoffloader";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 let db;
@@ -291,7 +303,67 @@ app.get("/filedetails/:id", async (req, res) => {
   }
 });
 
-const port = 5002;
+// @route GET /computed_at/:id
+// @desc  Get the computed_at value of a file from tasks collection using id
+app.get("/computed_at/:id", async (req, res) => {
+  try {
+    const tasksCollection = conn.db.collection("tasks");
+    const file = await tasksCollection.findOne({ _id: new mongoose.Types.ObjectId(req.params.id) });
+
+    if (!file) {
+      return res.status(404).json({
+        err: "No file exists in tasks collection"
+      });
+    }
+
+    return res.json({ computed_at: file.computed_at });
+  } catch (err) {
+    return res.status(500).json({ err: err.message });
+  }
+});
+
+// @route GET /computed_at
+// @desc  Get the computed_at value of all files from tasks collection
+app.get("/computed_at", async (req, res) => {
+  try {
+    const tasksCollection = conn.db.collection("tasks");
+    const files = await tasksCollection.find().toArray();
+
+    if (!files || files.length === 0) {
+      return res.status(404).json({
+        err: "No files exist in tasks collection"
+      });
+    }
+
+    const computedAtValues = files.map(file => ({
+      _id: file._id,
+      computed_at: file.computed_at
+    }));
+
+    return res.json(computedAtValues);
+  } catch (err) {
+    return res.status(500).json({ err: err.message });
+  }
+});
+
+// @route GET /computed_at/count
+// @desc  Get the count of files with computed_at="cloud" and computed_at="edge"
+app.get("/computed_at_count", async (req, res) => {
+  try {
+    const tasksCollection = conn.db.collection("tasks");
+    const cloudCount = await tasksCollection.countDocuments({ computed_at: "cloud" });
+    const edgeCount = await tasksCollection.countDocuments({ computed_at: "edge" });
+
+    return res.json({
+      cloud: cloudCount,
+      edge: edgeCount
+    });
+  } catch (err) {
+    return res.status(500).json({ err: err.message });
+  }
+});
+
+const port = process.env.port || 5002;
 
 app.listen(port, () => {
   console.log("server started on " + port);

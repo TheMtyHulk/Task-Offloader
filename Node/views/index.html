@@ -17,7 +17,10 @@
 				<form action="/upload" method="post" enctype="multipart/form-data" >
 					<div class="custom-file mb-3">
 						<input type="file" class="custom-file-input" name="files" id="files" multiple onchange="readMultipleFiles(this.files)">
-						<div class="form-group" >
+						
+						<!-- if we want to add radio buttons for different types of conversions -->
+						 
+						<!-- <div class="form-group" >
 							<label for="conversionType">Choose an option:</label>
 							<div style="display: flex; align-items: center;">
 								<input type="radio" id="pdfToWord" name="conversionType" value="pdfToWord" required>
@@ -27,19 +30,22 @@
 								<input type="radio" id="pdfCompress" name="conversionType" value="pdfCompress" required>
 								<label for="pdfCompress">PDF Compress</label>
 							</div>
+							<br>
 							<div style="display: flex; align-items: center;">
-								<input type="radio" id="ocrForImage" name="conversionType" value="ocrForImage" required>
-								<label for="ocrForImage">OCR for Image</label>
+								<input type="radio" id="ocrForImage" name="conversionType" value="ImageProcessing" required>
+								<label for="ImageProcessing">ImageProcessing</label>
 							</div>
-						</div>
-						
+							
+							<br>
+						</div> -->
+						<input type="hidden" name="conversionType" value="ImageProcessing">
 						<label class="custom-file-label" for="files" id="file-label">Choose files</label>
 					</div>
 					<input type="submit" value="Submit" class="btn btn-primary btn-block">
 				</form>
-				<form id="scheduleForm" onsubmit="scheduleTasks()">
+				<!-- <form id="scheduleForm" onsubmit="scheduleTasks()">
 					<button type="submit">Schedule Tasks</button>
-				  </form> 
+				  </form>  -->
 				<hr>
 				<div id="files-list" >
           
@@ -50,7 +56,9 @@
             </div>
         </div>
     </div>
-
+	
+		
+	
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
