@@ -22,7 +22,7 @@ class scheduler:
         fs=gridfs.GridFS(db)
         for name in os.listdir(directory):
             uuid=str(uuid4())
-            if not name.endswith('.pdf'):
+            if not name.endswith('.jpg') and not name.endswith('.jpeg') and not name.endswith('.png'):
                 continue
             with open(os.path.join(directory, name), 'rb') as f:
                 fs.put(f, filename=name,_id=uuid)
@@ -37,6 +37,6 @@ class scheduler:
 				"completed_by": None,
                 "assigned_to":None
 			})
-        print("All PDF files have been uploaded to MongoDB and tasks have been scheduled.")
+        print("All images have been uploaded to MongoDB and tasks have been scheduled.")
 s=scheduler()
-s.schedule("tasks")
+s.schedule("tasks/images")
