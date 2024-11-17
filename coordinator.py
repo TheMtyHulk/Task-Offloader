@@ -13,8 +13,7 @@ worker_set=set()
 
 class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
     def __init__(self):
-        
-      
+
         conn = sqlite3.connect('queue.db', check_same_thread=False)
         self.c = conn.cursor()
         self.c.execute('''CREATE TABLE IF NOT EXISTS WORKER_POOL (EDGE_ID STRING PRIMARY KEY)''')
@@ -39,10 +38,19 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
             return ",".join(tasks)
         
         return None
-        
+    
+    def add_worker_to_pool(self,EDGE_ID):
+        self.c.execute("INSERT INTO WORKER_POOL (EDGE_ID) VALUES (?)", (EDGE_ID,))
+        self.c.connection.commit()
+        return
+    
     def HeartbeatStream(self, request_iterator, context):
         for request in request_iterator:
-            worker_set.add(request.workerId)
+            
+            if request.workerId not in worker_set:
+                worker_set.add(request.workerId)
+                self.add_worker_to_pool(request.workerId)
+            
             print(f"Received heartbeat from worker {request.workerId}")
             # tasks = self.tasks.get(request.workerId, [])
             tasks=self.get_Task_Assignment_From_Queue(request.workerId)

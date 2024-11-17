@@ -1,15 +1,10 @@
-
+from pymongo import MongoClient
 import torch
 import cv2
 import imageio
 
-# Load the YOLOv5 model
-# device = 'cuda' if torch.cuda.is_available() else 'cpu'
-# print(device)
-model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
-# model = torch.hub.load('ultralytics/yolov5', 'yolov5n')
 
-# model = torch.hub.load('ultralytics/yolov5', 'yolov5n')
+model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
 
 # Initialize the video capture
 cap = cv2.VideoCapture('people.mp4')
@@ -52,7 +47,7 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Release resources
+
 cap.release()
 writer.close()
 cv2.destroyAllWindows()

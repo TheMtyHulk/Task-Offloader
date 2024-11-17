@@ -8,5 +8,7 @@ t
 algos/DNQ__dummy.py
 __pycache__
 image_processing/yolov5n.pt
-
 queue.db
+# queue.db
+
+cloud_config
