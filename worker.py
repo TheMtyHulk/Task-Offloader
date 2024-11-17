@@ -2,7 +2,15 @@ import grpc
 import time
 from proto_buffs import coordinator_pb2
 from proto_buffs import coordinator_pb2_grpc
+from gridfs import GridFS
+from pymongo import MongoClient
+import os
 
+def compute(tasks_list):
+    print("Computing tasks")
+    for task in tasks_list:
+        print(task)
+    return "Task completed"
 
 def run_worker(worker_id):
     channel = grpc.insecure_channel('localhost:50051')
@@ -17,7 +25,8 @@ def run_worker(worker_id):
         for response in stub.HeartbeatStream(heartbeat_stream()):
             if response.taskId:
                 # print(f"Worker {worker_id} received task: {response.taskId}")
-                print(response.taskId.split(","))
+               
+                compute(response.taskId.split(","))
                 # Process the task here
             else:
                 print(f"Worker {worker_id} received no task.",response.ack)
