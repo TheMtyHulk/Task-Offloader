@@ -47,25 +47,25 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
     def HeartbeatStream(self, request_iterator, context):
         for request in request_iterator:
             
-            if request.workerId not in worker_set:
-                worker_set.add(request.workerId)
-                self.add_worker_to_pool(request.workerId)
+            if request.edgeId not in worker_set:
+                worker_set.add(request.edgeId)
+                self.add_worker_to_pool(request.edgeId)
             
-            print(f"Received heartbeat from worker {request.workerId}")
+            print(f"Received heartbeat from edge {request.edgeId}")
             # tasks = self.tasks.get(request.workerId, [])
-            tasks=self.get_Task_Assignment_From_Queue(request.workerId)
+            tasks=self.get_Task_Assignment_From_Queue(request.edgeId)
             
             if tasks:
                 response = coordinator_pb2.TaskResponse(
                     ack="Acknowledged",
                     taskId=tasks,
-                    workerId=request.workerId
+                    edgeId=request.edgeId
                 )
             else:
                 response = coordinator_pb2.TaskResponse(
                     ack="Acknowledged",
                     taskId="",
-                    workerId=request.workerId
+                    edgeId=request.edgeId
                 )
             yield response
 

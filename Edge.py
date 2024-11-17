@@ -12,13 +12,13 @@ def compute(tasks_list):
         print(task)
     return "Task completed"
 
-def run_worker(worker_id):
+def run_worker(edge_id):
     channel = grpc.insecure_channel('localhost:50051')
     stub = coordinator_pb2_grpc.CoordinatorServiceStub(channel)
 
     def heartbeat_stream():
         while True:
-            yield coordinator_pb2.HeartbeatRequest(workerId=worker_id)
+            yield coordinator_pb2.HeartbeatRequest(edgeId=edge_id)
             time.sleep(5)  # Send heartbeat every 5 seconds
 
     try:
@@ -29,12 +29,12 @@ def run_worker(worker_id):
                 compute(response.taskId.split(","))
                 # Process the task here
             else:
-                print(f"Worker {worker_id} received no task.",response.ack)
+                print(f"edge {edge_id} received no task.",response.ack)
     except grpc.RpcError as e:
-        print(f"Worker {worker_id} encountered an error: {e}")
+        print(f"edge {edge_id} encountered an error: {e}")
     except KeyboardInterrupt:
-        print(f"Worker {worker_id} stopped.")
+        print(f"edge {edge_id} stopped.")
         
 if __name__ == '__main__':
-    worker_id = "E1"  # Replace with a unique worker ID
-    run_worker(worker_id)
+    edge_id = "E1"  # Replace with a unique worker ID
+    run_worker(edge_id)
