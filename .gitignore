@@ -4,7 +4,10 @@ testing
 PythonGrpc
 TaskMaster
 tasks
-# Ignore node_modules directory
-node_modules/
+
 
 __pycache__
+image_processing/yolov5n.pt
+queue.db
+
+cloud_config

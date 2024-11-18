@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package coordinator;
+
+message HeartbeatRequest {
+    string edgeId = 1;
+}
+
+message TaskResponse {
+    string ack = 1;
+    string taskId = 2;
+    string edgeId = 3;
+}
+
+service CoordinatorService {
+    rpc HeartbeatStream (stream HeartbeatRequest) returns (stream TaskResponse);
+
+
+}
