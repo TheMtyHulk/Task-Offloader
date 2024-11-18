@@ -5,7 +5,7 @@ PythonGrpc
 TaskMaster
 tasks
 
-
+node_modules/
 __pycache__
 image_processing/yolov5n.pt
 queue.db

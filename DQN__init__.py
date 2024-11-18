@@ -19,7 +19,7 @@ def connect_To_DB():
     for i in range(5):
         try:
             client = MongoClient(mongo_uri)
-            return client['taskmaster']
+            return client['test']
            
         except:
             print("Connection failed. Retrying...")
@@ -47,9 +47,9 @@ def upload_allotment_to_queue(dist:dict) -> dict:
     c.execute('''CREATE TABLE IF NOT EXISTS task_queue (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
     
     for key, val in dist.items():
-        if c.execute("SELECT * FROM task_queue WHERE TASK_ID=?", (key,)).fetchone():
+        if c.execute("SELECT * FROM task_queue WHERE TASK_ID=?", (str(key),)).fetchone():
             continue
-        c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (key, 'E'+str(val)))
+        c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (str(key), 'E'+str(val)))
     conn.commit()
     return
   
@@ -88,7 +88,7 @@ if __name__ == '__main__':
                 continue
             
             # Get task size
-            task_size=get_Task_Size(undone_tasks,db['fs.files'])
+            task_size=get_Task_Size(undone_tasks,db['uploads.files'])
             
             for i in range(len(undone_tasks)):
                 current_task_size = task_size.get(undone_tasks[i])
@@ -113,7 +113,7 @@ if __name__ == '__main__':
                     agent.update_target_network()
                 
                 tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'picked_at': datetime.now().strftime('%H:%M:%S')}})
-                tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'assigned_to': 'Edge' if action == 0 else 'cloud'}}) 
+                tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'computed_at': 'Edge' if action == 0 else 'cloud'}}) 
                 
                 if action == 0:
                     # edge_task_ids.append(undone_tasks[i])
@@ -126,6 +126,10 @@ if __name__ == '__main__':
             dist=t.get_distribution()
             
             #upload the distribution to the local file queue i.e. sqlite
+            #
+            for i in dist:
+                print(f"Task {i} is assigned to {dist[i]}")
+                #
             upload_allotment_to_queue(dist)
     
             
