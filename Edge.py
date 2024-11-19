@@ -7,6 +7,7 @@ from pymongo import MongoClient
 import os
 import logging
 from image_processing.process_img import process_img  
+from image_processing.process_vedio import process_vedio
 from datetime import datetime
 
 
@@ -43,6 +44,7 @@ def compute(task_id, db):
             
             logging.info(f"File {filee.filename} has been successfully saved ")
         elif file_extension==".mp4" or file_extension==".avi" or file_extension==".mov":
+            compute_video(file_path,new_filename,filename,file_extension,task_id,fs)
             tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
             logging.info(f"File {filee.filename} has been successfully saved ")
         else:
@@ -84,6 +86,29 @@ def compute_img(file_path,new_filename,filename,file_extension,task_id,fs):
 
 
 def compute_video(file_path,new_filename,filename,file_extension,task_id,fs):
+    computed_file_path = process_vedio(file_path, new_filename, filename, file_extension, task_id)
+    
+    # Find the old file by its task_id
+    old_file = fs.find_one({"_id": task_id})
+    if old_file:
+        # Retrieve the old file's metadata
+        old_file_id = old_file._id
+        old_metadata = old_file.metadata if old_file.metadata else {}
+
+        # Delete the old file
+        fs.delete(old_file_id)
+
+        # Upload the computed file with the same _id and metadata
+        with open(computed_file_path, "rb") as f:
+            fs.put(f, _id=old_file_id, filename=filename, metadata=old_metadata)
+
+    
+    # print("File replaced successfully with the computed image.")
+    logging.info("File replaced successfully with the computed image.")
+    # Delete the computed file
+    os.remove(computed_file_path)
+    os.remove(file_path)
+    return
     pass
 
 def run_worker(edge_id):

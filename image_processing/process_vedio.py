@@ -1,53 +1,68 @@
-from pymongo import MongoClient
-import torch
 import cv2
-import imageio
+from ultralytics import YOLO
+
+model = YOLO('yolov8n.pt') 
+def process_video(video_path, output_path):
+    # Load the YOLOv8 model
+    # Adjust to yolov8m.pt, yolov8l.pt, etc. as needed
+
+    # Open the video file
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Error: Unable to open video file {video_path}")
+        return
+
+    # Get video properties
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+
+    # Create a VideoWriter object to save the output video
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Perform object detection
+        results = model(frame)
+        
+        # Draw bounding boxes and labels on the frame
+        for result in results:
+            boxes = result.boxes.xyxy
+            confidences = result.boxes.conf
+            classes = result.boxes.cls
+            names = result.names
+            
+            for i, box in enumerate(boxes):
+                x1, y1, x2, y2 = map(int, box)
+                confidence = confidences[i]
+                cls = int(classes[i])
+                label = f'{names[cls]} {confidence:.2f}'
+                
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Write the frame to the output video file
+        out.write(frame)
+
+        # Display the frame with detections (optional)
+        # cv2.imshow('YOLOv8 Object Detection', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 
-model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
-
-# Initialize the video capture
-cap = cv2.VideoCapture('people.mp4')
-if not cap.isOpened():
-    print("Error: Could not open the video file.")
-    exit()
-
-# Retrieve the frame width, height, and FPS from the input video
-frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-fps = cap.get(cv2.CAP_PROP_FPS)
-
-# Initialize the writer with imageio, using ffmpeg to write the video
-writer = imageio.get_writer('output.mp4', fps=fps, codec='libx264', quality=8)
-
-while True:
-    ret, img = cap.read()
-    if not ret:
-        break
-
-    # Perform object detection
-    result = model(img)
-    data_frame = result.pandas().xyxy[0]
-
-    # Draw bounding boxes and labels on the image
-    for _, row in data_frame.iterrows():
-        x1, y1, x2, y2 = int(row['xmin']), int(row['ymin']), int(row['xmax']), int(row['ymax'])
-        label, conf = row['name'], row['confidence']
-        text = f"{label} {conf:.2f}"
-
-        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 255, 0), 2)
-        cv2.putText(img, text, (x1, y1 - 5), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 0), 2)
-
-    # Convert the image to RGB before writing to imageio
-    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    writer.append_data(rgb_img)
-
-    # Optionally show the image
-    # cv2.imshow('Processed Frame', img)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-
-cap.release()
-writer.close()
-cv2.destroyAllWindows()
+    # Release the video capture and writer objects
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
+    
+    
+def process_vedio(file_path, new_filename, filename, file_extension, task_id):
+    save_dir = 'working_files'
+    model = YOLO('yolov8n.pt')
+    output_path = f"{save_dir}/{new_filename}{file_extension}"
+    process_vedio(file_path, output_path)
+    return output_path
