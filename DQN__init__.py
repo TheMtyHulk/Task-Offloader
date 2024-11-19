@@ -47,9 +47,9 @@ def upload_allotment_to_queue(dist:dict) -> dict:
     c.execute('''CREATE TABLE IF NOT EXISTS task_queue (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
     
     for key, val in dist.items():
-        if c.execute("SELECT * FROM task_queue WHERE TASK_ID=?", (key,)).fetchone():
+        if c.execute("SELECT * FROM task_queue WHERE TASK_ID=?", (str(key),)).fetchone():
             continue
-        c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (key, 'E'+str(val)))
+        c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (str(key), 'E'+str(val)))
     conn.commit()
     return
   
@@ -62,6 +62,9 @@ if __name__ == '__main__':
     task_count = 0
     # Initialize DQN agent
     agent = DQNAgent(state_size, action_size)
+    
+    if os.path.exists('queue.db'):
+        os.remove('queue.db')
     
     db=connect_To_DB()
     tasks_cluster = db['tasks']
