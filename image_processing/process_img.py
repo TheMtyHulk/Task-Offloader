@@ -45,7 +45,7 @@ def process_img(file_path, new_filename, filename, file_extension, task_id):
     results = model(image_resized)
 
     # Print results to understand its structure
-    print(results)
+    # print(results)
 
     # Plot the detections
     plot_detections(image_resized, results)
