@@ -46,7 +46,7 @@ let gfs;
 conn.once("open", () => {
   // init stream
   gfs = new mongoose.mongo.GridFSBucket(conn.db, {
-    bucketName: "uploads"
+    bucketName: "fs"
   });
 });
 
@@ -73,7 +73,7 @@ const storage = new GridFsStorage({
         const fileInfo = {
           _id: uuidv4(), // Generate unique _id using uuid
           filename: filename,
-          bucketName: "uploads",
+          bucketName: "fs",
         };
         resolve(fileInfo);
       });
@@ -137,7 +137,7 @@ app.post("/upload", upload.array("files", 10), (req, res) => {
 
   // Add conversionType to each file document in the database
   req.files.forEach(async (file) => {
-    await conn.db.collection('uploads.files').updateOne(
+    await conn.db.collection('fs.files').updateOne(
       { _id: file.id },
       { $set: { conversionType: conversionType } }
     );
@@ -165,7 +165,7 @@ let db;
 client.connect(err => {
   if (err) throw err;
   db = client.db("taskoffloader");
-  gfs = new GridFSBucket(db, { bucketName: 'uploads' });
+  gfs = new GridFSBucket(db, { bucketName: 'fs' });
 });
 
 // to schedule tasks
