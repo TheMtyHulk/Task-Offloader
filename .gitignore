@@ -4,8 +4,8 @@ testing
 PythonGrpc
 TaskMaster
 tasks
-t
-algos/DNQ__dummy.py
+
+node_modules/
 __pycache__
 image_processing/yolov5n.pt
 queue.db
