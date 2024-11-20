@@ -7,7 +7,7 @@ from pymongo import MongoClient
 import os
 import logging
 from image_processing.process_img import process_img  
-from image_processing.process_vedio import process_vedio
+from image_processing.process_vedio import process_video
 from datetime import datetime
 
 
@@ -43,6 +43,7 @@ def compute(task_id, db):
             tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
             
             logging.info(f"File {filee.filename} has been successfully saved ")
+            
         elif file_extension==".mp4" or file_extension==".avi" or file_extension==".mov":
             compute_video(file_path,new_filename,filename,file_extension,task_id,fs)
             tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
@@ -86,7 +87,7 @@ def compute_img(file_path,new_filename,filename,file_extension,task_id,fs):
 
 
 def compute_video(file_path,new_filename,filename,file_extension,task_id,fs):
-    computed_file_path = process_vedio(file_path, new_filename, filename, file_extension, task_id)
+    computed_file_path = process_video(file_path, new_filename, filename, file_extension, task_id)
     
     # Find the old file by its task_id
     old_file = fs.find_one({"_id": task_id})
@@ -109,7 +110,7 @@ def compute_video(file_path,new_filename,filename,file_extension,task_id,fs):
     os.remove(computed_file_path)
     os.remove(file_path)
     return
-    pass
+    
 
 def run_worker(edge_id):
     channel = grpc.insecure_channel('localhost:50051')
