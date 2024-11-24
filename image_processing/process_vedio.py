@@ -1,53 +1,80 @@
-from pymongo import MongoClient
-import torch
 import cv2
-import imageio
+from ultralytics import YOLO
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
+def plot_detections(image, results):
+    fig, ax = plt.subplots(1)
+    ax.imshow(image)
 
-model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
+    # Iterate over the results list
+    for result in results:
+        boxes = result.boxes
+        names = result.names
 
-# Initialize the video capture
-cap = cv2.VideoCapture('people.mp4')
-if not cap.isOpened():
-    print("Error: Could not open the video file.")
-    exit()
+        # Iterate over the detections
+        for i, box in enumerate(boxes.xyxy):
+            x1, y1, x2, y2 = box[:4]
+            confidence = boxes.conf[i]  # Access the confidence score
+            class_id = boxes.cls[i]  # Access the class id
+            label = names[int(class_id)]  # Get the label name
 
-# Retrieve the frame width, height, and FPS from the input video
-frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-fps = cap.get(cv2.CAP_PROP_FPS)
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=1, edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
+            plt.text(x1, y1, f'{label} {confidence:.2f}', color='white', fontsize=8, bbox=dict(facecolor='red', alpha=0.5, pad=0.2))
 
-# Initialize the writer with imageio, using ffmpeg to write the video
-writer = imageio.get_writer('output.mp4', fps=fps, codec='libx264', quality=8)
+    plt.axis('off')
+    return
+    # plt.show()
 
-while True:
-    ret, img = cap.read()
-    if not ret:
-        break
+def process_video(video_path, new_filename,filename ,file_extension, task_id):
+    # Load the YOLOv8 model
+    model = YOLO('yolov8n.pt')  # Adjust to yolov8m.pt, yolov8l.pt, etc. as needed
 
-    # Perform object detection
-    result = model(img)
-    data_frame = result.pandas().xyxy[0]
+    # Open the video file
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise FileNotFoundError(f"Error: Unable to open video file {video_path}")
 
-    # Draw bounding boxes and labels on the image
-    for _, row in data_frame.iterrows():
-        x1, y1, x2, y2 = int(row['xmin']), int(row['ymin']), int(row['xmax']), int(row['ymax'])
-        label, conf = row['name'], row['confidence']
-        text = f"{label} {conf:.2f}"
+    # Get video properties
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 255, 0), 2)
-        cv2.putText(img, text, (x1, y1 - 5), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 0), 2)
+    # Create a VideoWriter object to save the output video
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    save_dir = 'working_files'
+    output_path = f"{save_dir}/{new_filename}{file_extension}"
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
-    # Convert the image to RGB before writing to imageio
-    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    writer.append_data(rgb_img)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-    # Optionally show the image
-    # cv2.imshow('Processed Frame', img)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        # Perform object detection
+        results = model(frame)
 
+        # Draw bounding boxes and labels on the frame
+        for result in results:
+            boxes = result.boxes
+            names = result.names
 
-cap.release()
-writer.close()
-cv2.destroyAllWindows()
+            for i, box in enumerate(boxes.xyxy):
+                x1, y1, x2, y2 = map(int, box[:4])
+                confidence = boxes.conf[i]
+                class_id = int(boxes.cls[i])
+                label = f"{names[class_id]} {confidence:.2f}"
+
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        out.write(frame)
+
+    cap.release()
+    out.release()
+    return output_path
+
+# if __name__ == "__main__":
+#     video_output = process_video(r'working_files/d.mp4', 'processed_video', '.mp4', 'task2')
+#     print(f"Processed video saved to {video_output}")

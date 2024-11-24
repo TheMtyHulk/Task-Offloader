@@ -22,8 +22,9 @@ class scheduler:
         fs=gridfs.GridFS(db)
         for name in os.listdir(directory):
             uuid=str(uuid4())
-            if not name.endswith('.jpg') and not name.endswith('.jpeg') and not name.endswith('.png'):
+            if not name.endswith('.jpg') and not name.endswith('.jpeg') and not name.endswith('.png') and not name.endswith('.mp4'):
                 continue
+            
             with open(os.path.join(directory, name), 'rb') as f:
                 fs.put(f, filename=name,_id=uuid)
             tasks.create_index("scheduled_at")
