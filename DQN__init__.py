@@ -19,7 +19,7 @@ def connect_To_DB():
     for i in range(5):
         try:
             client = MongoClient(mongo_uri)
-            return client['test']
+            return client['taskmaster']
            
         except:
             print("Connection failed. Retrying...")
@@ -91,10 +91,14 @@ if __name__ == '__main__':
                 continue
             
             # Get task size
-            task_size=get_Task_Size(undone_tasks,db['uploads.files'])
+            task_size=get_Task_Size(undone_tasks,db['fs.files'])
             
             for i in range(len(undone_tasks)):
                 current_task_size = task_size.get(undone_tasks[i])
+                if current_task_size is None:
+                    # print(f"Skipping task {undone_tasks[i]} due to missing size information.")
+                    continue
+                
                 state = [current_task_size, edge_computation_power, cloud_computation_power]
                 action = agent.select_action(state)
                 if action == 0:  # Edge
