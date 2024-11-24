@@ -11,7 +11,7 @@ image_processing/yolov5n.pt
 queue.db
 node_modules/
 cloud_config
-
+Node/.env
 
 image_processing/test.py
 

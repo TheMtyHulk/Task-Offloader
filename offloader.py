@@ -10,6 +10,8 @@ import threading
 
 pso_param={}
 
+NO_OF_EDGE_DEVICES = 3
+
 def connect_To_DB():
     load_dotenv()
     #set base directory
@@ -62,11 +64,15 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
             #delete worker from pool if idle for more than 5 minutes
             if (datetime.now()-datetime.strptime(r[1], '%Y-%m-%d %H:%M:%S')).seconds > 300:
                 c.execute("DELETE FROM WORKER_POOL WHERE EDGE_ID=?", (r[0],))
+                # NO_OF_EDGE_DEVICES -= 1
                 conn.commit()
+            
+            #delete tasks assigned to the worker
             task_ids = c.execute("SELECT TASK_ID FROM TASK_QUEUE WHERE EDGE=?", (r[0],)).fetchall()
             if not task_ids:
                 continue
-            # task_ids = [t[0] for t in task_ids]
+            
+            #reset the task status
             for t in task_ids:
                 
                 tasks_cluster.update_one({'_id': t[0]}, {'$set': {'started_at': None}})
@@ -77,7 +83,13 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
                 conn.commit()
                 
             print(f"Worker {r[0]} removed from pool due to inactivity.")
+        
         # Your periodic task code here
+        row=c.execute("SELECT * FROM WORKER_POOL").fetchall()
+        global NO_OF_EDGE_DEVICES
+        
+        if NO_OF_EDGE_DEVICES != len(row):
+            NO_OF_EDGE_DEVICES = len(row)
         
         time.sleep(60)  # Execute every 60 seconds
 
@@ -85,6 +97,7 @@ def start_Periodic_Worker_Pool_Check(conn,tasks_cluster):
     thread = threading.Thread(target=periodic_Worker_Pool_Check,args=(conn,tasks_cluster,))
     thread.daemon = True  # Daemonize thread to exit when the main program exits
     thread.start()
+
 
 if __name__ == '__main__':
    
@@ -165,7 +178,7 @@ if __name__ == '__main__':
                 print(f"Task {undone_tasks[i]}: Allocated to {'Edge' if action == 0 else 'Cloud'}")
             
             # get pso distribution
-            t=pso.Task_Assignment_Calc(3,pso_param)
+            t=pso.Task_Assignment_Calc(NO_OF_EDGE_DEVICES,pso_param)
             dist=t.get_distribution()
             
             #upload the distribution to the local file queue i.e. sqlite
