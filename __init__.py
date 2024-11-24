@@ -6,14 +6,23 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+if os.path.exists('queue.db'):
+    os.remove('queue.db')
+
+if not os.path.exists('queue.db'):
+    open('queue.db', 'w').close()
+
 # Path to the virtual environment's Python interpreter
 venv_python = os.path.join('venv', 'Scripts', 'python.exe')  # Use 'Scripts' on Windows
 
 # Start the subprocesses
 logging.info("Starting subprocesses...")
-process1 = subprocess.Popen([venv_python, 'DQN__init__.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-time.sleep(10)
 process2 = subprocess.Popen([venv_python, 'coordinator.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+time.sleep(15)
+process1 = subprocess.Popen([venv_python, 'DQN__init__.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
 
 try:
     while True:

@@ -6,6 +6,7 @@ from datetime import datetime
 from algos import PSOxMCT as pso
 from dotenv import load_dotenv
 import sqlite3
+import threading
 
 pso_param={}
 
@@ -37,12 +38,10 @@ def get_Task_Size(undone_tasks, files) -> dict:
             file_lengths[ud] = file_length_mb
     return file_lengths
 
-def upload_allotment_to_queue(dist:dict) -> dict:
+def upload_allotment_to_queue(dist:dict,conn) -> dict:
     
     if not dist:
         return
-    
-    conn = sqlite3.connect('queue.db', check_same_thread=False)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS task_queue (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
     
@@ -52,8 +51,40 @@ def upload_allotment_to_queue(dist:dict) -> dict:
         c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (str(key), 'E'+str(val)))
     conn.commit()
     return
-  
+ 
+def periodic_Worker_Pool_Check(conn,tasks_cluster):
+    c=conn.cursor()
+    while True:
+        # print("Executing periodic task")
+        row=c.execute("SELECT * FROM WORKER_POOL")
+        
+        for r in row:
+            #delete worker from pool if idle for more than 5 minutes
+            if (datetime.now()-datetime.strptime(r[1], '%Y-%m-%d %H:%M:%S')).seconds > 300:
+                c.execute("DELETE FROM WORKER_POOL WHERE EDGE_ID=?", (r[0],))
+                conn.commit()
+            task_ids = c.execute("SELECT TASK_ID FROM TASK_QUEUE WHERE EDGE=?", (r[0],)).fetchall()
+            if not task_ids:
+                continue
+            # task_ids = [t[0] for t in task_ids]
+            for t in task_ids:
+                
+                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'started_at': None}})
+                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'completed_at': None}})
+                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'completed_by': None}})
+                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'computed_at': None}})
+                c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t[0],))
+                conn.commit()
+                
+            print(f"Worker {r[0]} removed from pool due to inactivity.")
+        # Your periodic task code here
+        
+        time.sleep(60)  # Execute every 60 seconds
 
+def start_Periodic_Worker_Pool_Check(conn,tasks_cluster):
+    thread = threading.Thread(target=periodic_Worker_Pool_Check,args=(conn,tasks_cluster,))
+    thread.daemon = True  # Daemonize thread to exit when the main program exits
+    thread.start()
 
 if __name__ == '__main__':
    
@@ -63,8 +94,8 @@ if __name__ == '__main__':
     # Initialize DQN agent
     agent = DQNAgent(state_size, action_size)
     
-    if os.path.exists('queue.db'):
-        os.remove('queue.db')
+    # if os.path.exists('queue.db'):
+    #     os.remove('queue.db')
     
     db=connect_To_DB()
     tasks_cluster = db['tasks']
@@ -74,7 +105,12 @@ if __name__ == '__main__':
     
     conn = sqlite3.connect('queue.db', check_same_thread=False)
     c = conn.cursor()
+    
     c.execute('''CREATE TABLE IF NOT EXISTS TASK_QUEUE (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS WORKER_POOL (EDGE_ID STRING PRIMARY KEY, TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    
+    #start the periodic worker pool check thread
+    start_Periodic_Worker_Pool_Check(conn,tasks_cluster)
     
     edge_computation_power = 0.2
     cloud_computation_power = 1.0
@@ -137,7 +173,7 @@ if __name__ == '__main__':
             for i in dist:
                 print(f"Task {i} is assigned to {dist[i]}")
                 #
-            upload_allotment_to_queue(dist)
+            upload_allotment_to_queue(dist,conn)
     
             
             #never delete this shit
@@ -145,4 +181,4 @@ if __name__ == '__main__':
 
                 
     except KeyboardInterrupt:
-        print("Server stopped.")
+        print("offloader stopped.")
