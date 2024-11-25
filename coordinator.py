@@ -64,7 +64,7 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
             # if request.edgeId not in worker_set:
                 # worker_set.add(request.edgeId)
             if request.edgeId :
-                self.add_worker_to_pool(request.edgeId)
+                self.add_Worker_To_Pool(request.edgeId)
             
             print(f"Received heartbeat from edge {request.edgeId}")
             # tasks = self.tasks.get(request.workerId, [])
