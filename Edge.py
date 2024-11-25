@@ -39,12 +39,14 @@ def compute(task_id, db):
             logging.info("file saved successfully")
         # if os.path.exists(file_path):
         if file_extension==".jpg" or file_extension==".png" or file_extension==".jpeg":
+            tasks.update_one({"_id": task_id}, {"$set": {"started_at": datetime.datetime.now()}})
             compute_img(file_path,new_filename,filename,file_extension,task_id,fs)  
             tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
             
             logging.info(f"File {filee.filename} has been successfully saved ")
             
         elif file_extension==".mp4" or file_extension==".avi" or file_extension==".mov":
+            tasks.update_one({"_id": task_id}, {"$set": {"started_at": datetime.datetime.now()}})
             compute_video(file_path,new_filename,filename,file_extension,task_id,fs)
             tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
             logging.info(f"File {filee.filename} has been successfully saved ")
