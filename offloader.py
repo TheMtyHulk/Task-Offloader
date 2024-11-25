@@ -185,6 +185,7 @@ if __name__ == '__main__':
                 
                 tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'picked_at': datetime.now().strftime('%H:%M:%S')}})
                 tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'assigned_to': 'Edge' if action == 0 else 'cloud'}}) 
+               
                 
                 if action == 0:
                     # edge_task_ids.append(undone_tasks[i])

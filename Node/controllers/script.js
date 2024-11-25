@@ -68,7 +68,7 @@ const checkComputedAt = async () => {
         try {
             const response = await fetch(`/filedetails/${file._id}`);
             const result = await response.json();
-            if (result.computed_at) {
+            if (result.assigned_to) {
                 downloadButton.style.display = 'inline-block';
                 iframeButton.style.display = 'inline-block';
                 break; // Exit the loop once the condition is met
@@ -96,7 +96,7 @@ checkComputedAt();
                             <p>Started At: ${result.started_at ? new Date(result.started_at).toLocaleString() : 'N/A'}</p>
                             <p>Completed At: ${result.completed_at ? new Date(result.completed_at).toLocaleString() : 'N/A'}</p>
                             <p>Completed By: ${result.completed_by || 'N/A'}</p>
-                            <p>Computed At: ${result.computed_at ? result.computed_at: 'N/A'}</p>
+                            <p>Computed At: ${result.assigned_to ? result.assigned_to: 'N/A'}</p>
                             <p>Operation: ${result.operation || 'N/A'}</p>
                         </div>`;
                     detailsDiv.style.display = 'block'; // Show the details
@@ -105,8 +105,8 @@ checkComputedAt();
                 viewDetailsButton.style.display = 'none'; // Hide the view button
                 
                 //
-                // Show download button only if computed_at is not "N/A"
-                if (result.computed_at) {
+                // Show download button only if assigned_to is not "N/A"
+                if (result.assigned_to) {
                     downloadButton.style.display = 'inline-block';
                     iframeButton.style.display = 'inline-block'
                 } else {

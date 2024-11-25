@@ -49,7 +49,7 @@ This project is a task offloading system that allows users to upload tasks (file
 
 2. Start the DQN initialization script:
     ```sh
-    python DQN__init__.py
+    python offloader.py
     ```
 
 3. Start the edge worker:
@@ -91,7 +91,7 @@ This project is a task offloading system that allows users to upload tasks (file
 ├── testing/
 ├── venv/
 ├── coordinator.py
-├── DQN__init__.py
+├── offloader.py
 ├── Edge.py
 ├── requirements.txt
 ├── scheduler.py
