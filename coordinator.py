@@ -45,16 +45,22 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
     
     
     #add edge device to worker pool
-    def add_Worker_To_Pool(self,EDGE_ID):
-        temp=self.c.execute("SELECT * FROM WORKER_POOL WHERE EDGE_ID=?", (EDGE_ID,))
+    def add_Worker_To_Pool(self, EDGE_ID):
+        temp = self.c.execute("SELECT * FROM WORKER_POOL WHERE EDGE_ID=:edge_id", {"edge_id": EDGE_ID})
         
         # if worker already in pool, update timestamp
         if temp.fetchone():
-            self.c.execute("UPDATE WORKER_POOL SET TIMESTAMP=? WHERE EDGE_ID=?", (datetime.now(),EDGE_ID))
+            self.c.execute(
+                "UPDATE WORKER_POOL SET TIMESTAMP=:timestamp WHERE EDGE_ID=:edge_id",
+                {"timestamp": datetime.now(), "edge_id": EDGE_ID}
+            )
             self.c.connection.commit()
             return
         
-        self.c.execute("INSERT INTO WORKER_POOL (EDGE_ID) VALUES (?)", (EDGE_ID,datetime.now()))
+        self.c.execute(
+            "INSERT INTO WORKER_POOL (EDGE_ID, TIMESTAMP) VALUES (:edge_id, :timestamp)",
+            {"edge_id": EDGE_ID, "timestamp": datetime.now()}
+        )
         self.c.connection.commit()
         return
     
@@ -92,7 +98,11 @@ def serve():
     server.start()
     # server.wa
     print("Server started, listening on port 50051.")
-    # try:
+    try:
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        server.stop(0)
+        
     #     while True:
     #         time.sleep(86400)  # Keep the server running for 24 hours
     # except KeyboardInterrupt:
