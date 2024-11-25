@@ -192,7 +192,7 @@ app.post("/schedule-tasks", async (req, res) => {
         started_at: null,
         completed_at: null,
         completed_by: null,
-        computed_at: null, // edge or cloud
+        assigned_to: null, // edge or cloud
         operation: file.conversionType,
                      
       }));
@@ -316,7 +316,7 @@ app.get("/computed_at/:id", async (req, res) => {
       });
     }
 
-    return res.json({ computed_at: file.computed_at });
+    return res.json({ assigned_to: file.assigned_to });
   } catch (err) {
     return res.status(500).json({ err: err.message });
   }
@@ -337,7 +337,7 @@ app.get("/computed_at", async (req, res) => {
 
     const computedAtValues = files.map(file => ({
       _id: file._id,
-      computed_at: file.computed_at
+      assigned_to: file.assigned_to
     }));
 
     return res.json(computedAtValues);
@@ -351,8 +351,8 @@ app.get("/computed_at", async (req, res) => {
 app.get("/computed_at_count", async (req, res) => {
   try {
     const tasksCollection = conn.db.collection("tasks");
-    const cloudCount = await tasksCollection.countDocuments({ computed_at: "cloud" });
-    const edgeCount = await tasksCollection.countDocuments({ computed_at: "edge" });
+    const cloudCount = await tasksCollection.countDocuments({ assigned_to: "cloud" });
+    const edgeCount = await tasksCollection.countDocuments({ assigned_to: "edge" });
 
     return res.json({
       cloud: cloudCount,
