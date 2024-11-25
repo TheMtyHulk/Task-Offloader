@@ -35,7 +35,6 @@ class scheduler:
 				"picked_at": None,
 				"started_at": None,
 				"completed_at": None,
-				"completed_by": None,
                 "assigned_to":None
 			})
         print("All images have been uploaded to MongoDB and tasks have been scheduled.")
