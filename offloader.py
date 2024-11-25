@@ -47,11 +47,24 @@ def upload_allotment_to_queue(dist:dict,conn) -> dict:
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS task_queue (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
     
+    EDGE_POOL=[i[0] for i in c.execute("SELECT * FROM WORKER_POOL").fetchall()]
+    
+    if not EDGE_POOL:
+        print("No edge devices available. Please add edge devices to the pool.")
+        return
+    
+    # Create a mapping from matrix-produced values to actual edge device IDs
+    edge_mapping = {i: EDGE_POOL[i] for i in range(len(EDGE_POOL))}
+    
     for key, val in dist.items():
         if c.execute("SELECT * FROM task_queue WHERE TASK_ID=?", (str(key),)).fetchone():
             continue
-        c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (str(key), 'E'+str(val)))
+        if val not in edge_mapping:
+            val = 0  # Default to the first available edge device if the value is not in the mapping
+        actual_edge_id = edge_mapping[val]
+        c.execute("INSERT INTO task_queue (TASK_ID, EDGE) VALUES (?, ?)", (str(key), str(actual_edge_id)))
     conn.commit()
+    
     return
  
 def periodic_Worker_Pool_Check(conn,tasks_cluster):
@@ -62,10 +75,11 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
         
         for r in row:
             #delete worker from pool if idle for more than 5 minutes
-            if (datetime.now()-datetime.strptime(r[1], '%Y-%m-%d %H:%M:%S')).seconds > 300:
+            timestamp = datetime.strptime(r[1], '%Y-%m-%d %H:%M:%S.%f')
+            if (datetime.now()-timestamp).seconds > 300:
                 c.execute("DELETE FROM WORKER_POOL WHERE EDGE_ID=?", (r[0],))
                 # NO_OF_EDGE_DEVICES -= 1
-                conn.commit()
+            conn.commit()
             
             #delete tasks assigned to the worker
             task_ids = c.execute("SELECT TASK_ID FROM TASK_QUEUE WHERE EDGE=?", (r[0],)).fetchall()
@@ -77,8 +91,9 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
                 
                 tasks_cluster.update_one({'_id': t[0]}, {'$set': {'started_at': None}})
                 tasks_cluster.update_one({'_id': t[0]}, {'$set': {'completed_at': None}})
-                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'completed_by': None}})
-                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'computed_at': None}})
+                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'picked_at': None}})
+                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'assigned_to': None}})
+                
                 c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t[0],))
                 conn.commit()
                 
@@ -169,7 +184,7 @@ if __name__ == '__main__':
                     agent.update_target_network()
                 
                 tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'picked_at': datetime.now().strftime('%H:%M:%S')}})
-                tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'computed_at': 'Edge' if action == 0 else 'cloud'}}) 
+                tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'assigned_to': 'Edge' if action == 0 else 'cloud'}}) 
                 
                 if action == 0:
                     # edge_task_ids.append(undone_tasks[i])
@@ -178,6 +193,7 @@ if __name__ == '__main__':
                 print(f"Task {undone_tasks[i]}: Allocated to {'Edge' if action == 0 else 'Cloud'}")
             
             # get pso distribution
+            print('NO_OF_EDGE_DEVICES: ',NO_OF_EDGE_DEVICES)
             t=pso.Task_Assignment_Calc(NO_OF_EDGE_DEVICES,pso_param)
             dist=t.get_distribution()
             
