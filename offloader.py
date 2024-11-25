@@ -78,7 +78,7 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
                 tasks_cluster.update_one({'_id': t[0]}, {'$set': {'started_at': None}})
                 tasks_cluster.update_one({'_id': t[0]}, {'$set': {'completed_at': None}})
                 tasks_cluster.update_one({'_id': t[0]}, {'$set': {'completed_by': None}})
-                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'computed_at': None}})
+                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'assigned_to': None}})
                 c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t[0],))
                 conn.commit()
                 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
                     agent.update_target_network()
                 
                 tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'picked_at': datetime.now().strftime('%H:%M:%S')}})
-                tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'computed_at': 'Edge' if action == 0 else 'cloud'}}) 
+                tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'assigned_to': 'Edge' if action == 0 else 'cloud'}}) 
                 
                 if action == 0:
                     # edge_task_ids.append(undone_tasks[i])
