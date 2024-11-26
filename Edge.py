@@ -8,7 +8,7 @@ import os
 import logging
 from image_processing.process_img import process_img  
 from image_processing.process_vedio import process_video
-from datetime import datetime
+import datetime
 
 
 def compute(task_id, db):
@@ -28,26 +28,32 @@ def compute(task_id, db):
         #adjusting the file name to avoid overwriting 
         filename, file_extension = os.path.splitext(filee.filename)
         
-        new_filename=task_id+file_extension
-        
-        file_path = os.path.join(save_dir, filename+file_extension)
-        
-        
+        file_extension=file_extension.strip()
+        new_filename = task_id + file_extension
+        op_new_f_name="computed_"+task_id 
+        # Ensure the file extension is stripped of any leading/trailing whitespace
+  
+
+        # Construct the file path using the new filename
+        file_path = os.path.join(save_dir, new_filename)
+        # print(file_path)
+
         # Save the file to the directory
+        
         with open(file_path, "wb") as f:
             f.write(filee.read())
             logging.info("file saved successfully")
-        # if os.path.exists(file_path):
+
         if file_extension==".jpg" or file_extension==".png" or file_extension==".jpeg":
             tasks.update_one({"_id": task_id}, {"$set": {"started_at": datetime.datetime.now()}})
-            compute_img(file_path,new_filename,filename,file_extension,task_id,fs)  
+            compute_img(file_path,op_new_f_name,filename,file_extension,task_id,fs)  
             tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
             
             logging.info(f"File {filee.filename} has been successfully saved ")
             
         elif file_extension==".mp4" or file_extension==".avi" or file_extension==".mov":
             tasks.update_one({"_id": task_id}, {"$set": {"started_at": datetime.datetime.now()}})
-            compute_video(file_path,new_filename,filename,file_extension,task_id,fs)
+            # compute_video(file_path,new_filename,filename,file_extension,task_id,fs)
             tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
             logging.info(f"File {filee.filename} has been successfully saved ")
         else:
@@ -64,7 +70,7 @@ def compute(task_id, db):
 def compute_img(file_path,new_filename,filename,file_extension,task_id,fs):
     # Process the image (this function should save the computed image to a new file path)
     computed_file_path = process_img(file_path, new_filename, filename, file_extension, task_id)
-    
+    print(computed_file_path)
     # Find the old file by its task_id
     old_file = fs.find_one({"_id": task_id})
     if old_file:
@@ -77,7 +83,7 @@ def compute_img(file_path,new_filename,filename,file_extension,task_id,fs):
 
         # Upload the computed file with the same _id and metadata
         with open(computed_file_path, "rb") as f:
-            fs.put(f, _id=old_file_id, filename=filename, metadata=old_metadata)
+            fs.put(f, _id=old_file_id, filename=filename+file_extension, metadata=old_metadata)
 
     
     # print("File replaced successfully with the computed image.")
@@ -103,7 +109,7 @@ def compute_video(file_path,new_filename,filename,file_extension,task_id,fs):
 
         # Upload the computed file with the same _id and metadata
         with open(computed_file_path, "rb") as f:
-            fs.put(f, _id=old_file_id, filename=filename, metadata=old_metadata)
+            fs.put(f, _id=old_file_id, filename=filename+file_extension, metadata=old_metadata)
 
     
     # print("File replaced successfully with the computed image.")
