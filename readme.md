@@ -14,8 +14,8 @@ This project is a task offloading system that allows users to upload tasks (file
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/task-offloading-system.git
-    cd task-offloading-system
+    git clone https://github.com/TheMtyHulk/Task-Offloader.git
+    cd Task-Offloader
     ```
 
 2. Create a virtual environment and activate it:
@@ -46,17 +46,14 @@ This project is a task offloading system that allows users to upload tasks (file
     ```sh
     python coordinator.py
     ```
-
-2. Start the DQN initialization script:
-    ```sh
-    python offloader.py
-    ```
-
-3. Start the edge worker:
+2. Start the edge worker:
     ```sh
     python Edge.py
     ```
-
+3. Start the DQN initialization script:
+    ```sh
+    python offloader.py
+    ```
 4. Start the Node.js server:
     ```sh
     cd Node
