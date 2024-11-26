@@ -7,7 +7,7 @@ from algos import PSOxMCT as pso
 from dotenv import load_dotenv
 import sqlite3
 import threading
-
+from bson import ObjectId
 pso_param={}
 
 NO_OF_EDGE_DEVICES = 3
@@ -33,7 +33,7 @@ def connect_To_DB():
 def get_Task_Size(undone_tasks, files) -> dict:
     file_lengths = {}
     for ud in undone_tasks:
-        for f in files.find({'_id': ud}):
+        for f in files.find({'_id':ObjectId(ud)}):
             # estimated_task_times(round(file.get('length')/1024/1024,2))
             file_length_mb = round(f.get('length') / 1024 / 1024, 2)
             # file_lengths[ud] = max(0.1, min(file_length_mb, 1.0))
@@ -89,10 +89,10 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
             #reset the task status
             for t in task_ids:
                 
-                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'started_at': None}})
-                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'completed_at': None}})
-                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'picked_at': None}})
-                tasks_cluster.update_one({'_id': t[0]}, {'$set': {'assigned_to': None}})
+                tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'started_at': None}})
+                tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'completed_at': None}})
+                tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'picked_at': None}})
+                tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'assigned_to': None}})
                 
                 c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t[0],))
                 conn.commit()
@@ -183,8 +183,8 @@ if __name__ == '__main__':
                 if task_count % 10 == 0:
                     agent.update_target_network()
                 
-                tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'picked_at': datetime.now().strftime('%H:%M:%S')}})
-                tasks_cluster.update_one({'_id': undone_tasks[i]}, {'$set': {'assigned_to': 'Edge' if action == 0 else 'cloud'}}) 
+                tasks_cluster.update_one({'_id': ObjectId(undone_tasks[i])}, {'$set': {'picked_at': datetime.now().strftime('%H:%M:%S')}})
+                tasks_cluster.update_one({'_id': ObjectId(undone_tasks[i])}, {'$set': {'assigned_to': 'Edge' if action == 0 else 'cloud'}}) 
                
                 
                 if action == 0:

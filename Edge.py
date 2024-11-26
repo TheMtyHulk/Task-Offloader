@@ -9,12 +9,12 @@ import logging
 from image_processing.process_img import process_img  
 from image_processing.process_vedio import process_video
 import datetime
-
+from bson import ObjectId
 
 def compute(task_id, db):
     try:
         fs = GridFS(db)
-        filee = fs.find_one({"_id": task_id})
+        filee = fs.find_one({"_id": ObjectId(task_id)})
         tasks=db['tasks']
         if not filee:
             raise Exception("File not found in GridFS with the provided task_id")
@@ -45,16 +45,16 @@ def compute(task_id, db):
             logging.info("file saved successfully")
 
         if file_extension==".jpg" or file_extension==".png" or file_extension==".jpeg":
-            tasks.update_one({"_id": task_id}, {"$set": {"started_at": datetime.datetime.now()}})
+            tasks.update_one({"_id": ObjectId(task_id)}, {"$set": {"started_at": datetime.datetime.now()}})
             compute_img(file_path,op_new_f_name,filename,file_extension,task_id,fs)  
-            tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
+            tasks.update_one({"_id": ObjectId(task_id)}, {"$set": {"completed_at": datetime.datetime.now()}})
             
             logging.info(f"File {filee.filename} has been successfully saved ")
             
         elif file_extension==".mp4" or file_extension==".avi" or file_extension==".mov":
-            tasks.update_one({"_id": task_id}, {"$set": {"started_at": datetime.datetime.now()}})
+            tasks.update_one({"_id": ObjectId(task_id)}, {"$set": {"started_at": datetime.datetime.now()}})
             compute_video(file_path,op_new_f_name,filename,file_extension,task_id,fs)
-            tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
+            tasks.update_one({"_id": ObjectId(task_id)}, {"$set": {"completed_at": datetime.datetime.now()}})
             logging.info(f"File {filee.filename} has been successfully saved ")
         else:
             logging.error("File format not supported")
@@ -72,18 +72,18 @@ def compute_img(file_path,new_filename,filename,file_extension,task_id,fs):
     computed_file_path = process_img(file_path, new_filename, filename, file_extension, task_id)
     print(computed_file_path)
     # Find the old file by its task_id
-    old_file = fs.find_one({"_id": task_id})
+    old_file = fs.find_one({"_id": ObjectId(task_id)})
     if old_file:
         # Retrieve the old file's metadata
         old_file_id = old_file._id
         old_metadata = old_file.metadata if old_file.metadata else {}
 
         # Delete the old file
-        fs.delete(old_file_id)
+        fs.delete(ObjectId(old_file_id))
 
         # Upload the computed file with the same _id and metadata
         with open(computed_file_path, "rb") as f:
-            fs.put(f, _id=old_file_id, filename=filename+file_extension, metadata=old_metadata)
+            fs.put(f, _id=ObjectId(old_file_id), filename=filename+file_extension, metadata=old_metadata)
 
     
     # print("File replaced successfully with the computed image.")
@@ -98,18 +98,18 @@ def compute_video(file_path,new_filename,filename,file_extension,task_id,fs):
     computed_file_path = process_video(file_path, new_filename, filename, file_extension, task_id)
     
     # Find the old file by its task_id
-    old_file = fs.find_one({"_id": task_id})
+    old_file = fs.find_one({"_id": ObjectId(task_id)})
     if old_file:
         # Retrieve the old file's metadata
         old_file_id = old_file._id
         old_metadata = old_file.metadata if old_file.metadata else {}
 
         # Delete the old file
-        fs.delete(old_file_id)
+        fs.delete(ObjectId(old_file_id))
 
         # Upload the computed file with the same _id and metadata
         with open(computed_file_path, "rb") as f:
-            fs.put(f, _id=old_file_id, filename=filename+file_extension, metadata=old_metadata)
+            fs.put(f, _id=ObjectId(old_file_id), filename=filename+file_extension, metadata=old_metadata)
 
     
     # print("File replaced successfully with the computed image.")
