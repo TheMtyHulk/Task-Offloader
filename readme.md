@@ -72,11 +72,9 @@ This project is a task offloading system that allows users to upload tasks (file
 ├── algos/
 │   ├── DQN.py
 │   ├── PSOxMCT.py
-│   └── __pycache__/
 ├── image_processing/
 │   ├── process_img.py
 │   ├── process_video.py
-│   └── __pycache__/
 ├── Node/
 │   ├── .env
 │   ├── app.js
@@ -87,7 +85,6 @@ This project is a task offloading system that allows users to upload tasks (file
 │   ├── coordinator.proto
 │   ├── coordinator_pb2.py
 │   ├── coordinator_pb2_grpc.py
-│   └── __pycache__/
 ├── coordinator.py
 ├── offloader.py
 ├── Edge.py
