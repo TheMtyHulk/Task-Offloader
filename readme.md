@@ -88,8 +88,6 @@ This project is a task offloading system that allows users to upload tasks (file
 │   ├── coordinator_pb2.py
 │   ├── coordinator_pb2_grpc.py
 │   └── __pycache__/
-├── testing/
-├── venv/
 ├── coordinator.py
 ├── offloader.py
 ├── Edge.py
