@@ -53,7 +53,7 @@ def compute(task_id, db):
             
         elif file_extension==".mp4" or file_extension==".avi" or file_extension==".mov":
             tasks.update_one({"_id": task_id}, {"$set": {"started_at": datetime.datetime.now()}})
-            # compute_video(file_path,new_filename,filename,file_extension,task_id,fs)
+            compute_video(file_path,op_new_f_name,filename,file_extension,task_id,fs)
             tasks.update_one({"_id": task_id}, {"$set": {"completed_at": datetime.datetime.now()}})
             logging.info(f"File {filee.filename} has been successfully saved ")
         else:
