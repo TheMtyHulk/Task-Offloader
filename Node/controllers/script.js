@@ -10,18 +10,22 @@ function readMultipleFiles(files) {
 function loadFiles(files) {
     const filesList = document.getElementById('files-list');
     filesList.innerHTML = ''; // Clear existing content
+    
 
     if (files && files.length > 0) {
         scheduleTasks();
         files.forEach(function(file) {
+            
             const card = document.createElement('div');
             card.className = 'card mb-3';
+            // card.style.width = '1000px';
 
             //card header
             const cardHeader = document.createElement('div');
             cardHeader.className = 'card-header';
             const cardTitle = document.createElement('div');
             cardTitle.className = 'card-title';
+            
             cardTitle.textContent = file.filename;
             cardHeader.appendChild(cardTitle);
 
@@ -68,7 +72,7 @@ const checkComputedAt = async () => {
         try {
             const response = await fetch(`/filedetails/${file._id}`);
             const result = await response.json();
-            if (result.assigned_to) {
+            if (result.completed_at) {
                 downloadButton.style.display = 'inline-block';
                 iframeButton.style.display = 'inline-block';
                 break; // Exit the loop once the condition is met
@@ -78,6 +82,7 @@ const checkComputedAt = async () => {
             }
         } catch (err) {
             console.error('Error fetching file details', err);
+            
         }
         await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before checking again
     }
@@ -92,10 +97,10 @@ checkComputedAt();
                             <p>Task ID: ${result._id || 'N/A'}</p>
                             <p>Command: ${result.command || 'N/A'}</p>
                             <p>Scheduled At: ${result.scheduled_at ? new Date(result.scheduled_at).toLocaleString() : 'N/A'}</p>
-                            <p>Picked At: ${result.picked_at ? new Date(result.picked_at).toLocaleString() : 'N/A'}</p>
+                            <p>Picked At: ${result.picked_at ? result.picked_at : 'N/A'}</p>
                             <p>Started At: ${result.started_at ? new Date(result.started_at).toLocaleString() : 'N/A'}</p>
                             <p>Completed At: ${result.completed_at ? new Date(result.completed_at).toLocaleString() : 'N/A'}</p>
-                            <p>Completed By: ${result.completed_by || 'N/A'}</p>
+                            <!--<p>Completed By: ${result.completed_by || 'N/A'}</p>-->
                             <p>Computed At: ${result.assigned_to ? result.assigned_to: 'N/A'}</p>
                             <p>Operation: ${result.operation || 'N/A'}</p>
                         </div>`;
@@ -106,13 +111,13 @@ checkComputedAt();
                 
                 //
                 // Show download button only if assigned_to is not "N/A"
-                if (result.assigned_to) {
-                    downloadButton.style.display = 'inline-block';
-                    iframeButton.style.display = 'inline-block'
-                } else {
-                    downloadButton.style.display = 'none';
-                    iframeButton.style.display = 'none';
-                }
+                // if (result.completed_at) {
+                //     downloadButton.style.display = 'inline-block';
+                //     iframeButton.style.display = 'inline-block'
+                // } else {
+                //     downloadButton.style.display = 'none';
+                //     iframeButton.style.display = 'none';
+                // }
                 } catch (err) {
                     detailsDiv.innerText = 'Error fetching file details';
                     detailsDiv.style.display = 'block'; // Show the error message
@@ -152,6 +157,7 @@ checkComputedAt();
             iframeButton.className = 'btn btn-secondary';
             iframeButton.textContent = 'View in Iframe';
             iframeButton.style.display = 'none';
+            iframeButton.style.float = 'right';
             iframeButton.onclick = function() {
                 if (file.contentType.startsWith('video/')) {
                     const video = document.createElement('video');
