@@ -131,7 +131,7 @@ def serve():
         return
     
     server_credentials = grpc.ssl_server_credentials([(private_key, certificate_chain,)])
-    server.add_secure_port('127.0.0.1:50051', server_credentials)
+    server.add_secure_port('[::]:50051', server_credentials)
     server.start()
     # server.wa
     print("Server started, listening on port 50051.")
