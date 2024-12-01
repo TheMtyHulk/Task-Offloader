@@ -10,6 +10,9 @@ from image_processing.process_img import process_img
 from image_processing.process_vedio import process_video
 import datetime
 from bson import ObjectId
+import jwt
+from dotenv import load_dotenv
+from grpc import ssl_channel_credentials
 
 def compute(task_id, db):
     try:
@@ -118,19 +121,39 @@ def compute_video(file_path,new_filename,filename,file_extension,task_id,fs):
     os.remove(computed_file_path)
     os.remove(file_path)
     return
-    
+
+
+def generate_jwt(edge_id):
+    SECRET_KEY=os.getenv('JWT_SECRET')
+    payload = {
+        'edgeId': edge_id, 
+        'exp': datetime.datetime.now() + datetime.timedelta(minutes=30)
+    }
+    token = jwt.encode(payload,SECRET_KEY, algorithm='HS256')
+    return token
 
 def run_worker(edge_id):
-    channel = grpc.insecure_channel('localhost:50051')
+    
+    try:
+        with open('openssl-keys/server.crt', 'rb') as f:
+            certificate_chain = f.read()
+    except FileNotFoundError:
+        print("Certificate file not found.")
+        return
+    
+    credentials = grpc.ssl_channel_credentials(certificate_chain)
+    channel = grpc.secure_channel('127.0.0.1:50051',credentials)
     stub = coordinator_pb2_grpc.CoordinatorServiceStub(channel)
 
     def heartbeat_stream():
         while True:
             yield coordinator_pb2.HeartbeatRequest(edgeId=edge_id)
             time.sleep(5)  # Send heartbeat every 5 seconds
-
+    
+    token = generate_jwt(edge_id)
+    metadata = [('authorization', token)]
     try:
-        for response in stub.HeartbeatStream(heartbeat_stream()):
+        for response in stub.HeartbeatStream(heartbeat_stream(), metadata=metadata):
             if response.taskId:
                 # print(f"Worker {worker_id} received task: {response.taskId}")
                 client = MongoClient(os.getenv('MONGO_URL'))
@@ -148,6 +171,9 @@ def run_worker(edge_id):
         print(f"edge {edge_id} stopped.")
         
 if __name__ == '__main__':
+    load_dotenv()
+    #set base directory
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     edge_id = "E1"  # Replace with a unique worker ID
     run_worker(edge_id)
     

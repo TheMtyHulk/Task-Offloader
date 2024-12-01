@@ -7,6 +7,9 @@ import grpc
 import time
 import sqlite3
 import threading
+from dotenv import load_dotenv
+import jwt
+import logging
 
 worker_set=set()
 
@@ -90,10 +93,45 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
             yield response
           
 
+class JWTAuthInterceptor(grpc.ServerInterceptor):
+    def __init__(self, secret_key):
+        self.secret_key = secret_key
+
+    def intercept_service(self, continuation, handler_call_details):
+        metadata = dict(handler_call_details.invocation_metadata)
+        token = metadata.get('authorization')
+        if not token:
+            context = handler_call_details.invocation_metadata
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Authorization token is missing')
+        try:
+            jwt.decode(token, self.secret_key, algorithms=['HS256'])
+            print(f"Authentication successful for token: {token}")
+            logging.info(f"Authentication successful for token: {token}")
+        except jwt.ExpiredSignatureError:
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Token has expired')
+        except jwt.InvalidTokenError:
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Invalid token')
+        return continuation(handler_call_details)
+
+
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    load_dotenv()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), interceptors=[JWTAuthInterceptor(os.getenv('JWT_SECRET'))])
     coordinator_pb2_grpc.add_CoordinatorServiceServicer_to_server(CoordinatorService(), server)
-    server.add_insecure_port('localhost:50051')
+    
+    #load SSL/TLS certificate
+    try:
+        with open('openssl-keys/server.crt', 'rb') as f:
+            certificate_chain = f.read()
+        with open('openssl-keys/server.key', 'rb') as f:
+            private_key = f.read()
+    except FileNotFoundError:
+        print("Certificate and/or private key file not found")
+        return
+    
+    server_credentials = grpc.ssl_server_credentials([(private_key, certificate_chain,)])
+    server.add_secure_port('127.0.0.1:50051', server_credentials)
     server.start()
     # server.wa
     print("Server started, listening on port 50051.")
