@@ -67,8 +67,7 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
     def HeartbeatStream(self, request_iterator, context):
         for request in request_iterator:
             
-            # if request.edgeId not in worker_set:
-                # worker_set.add(request.edgeId)
+            #add edge device to worker pool
             if request.edgeId :
                 self.add_Worker_To_Pool(request.edgeId)
             
@@ -102,11 +101,6 @@ def serve():
         server.wait_for_termination()
     except KeyboardInterrupt:
         server.stop(0)
-        
-    #     while True:
-    #         time.sleep(86400)  # Keep the server running for 24 hours
-    # except KeyboardInterrupt:
-    #     server.stop(0)
     server.wait_for_termination()
 
 if __name__ == '__main__':

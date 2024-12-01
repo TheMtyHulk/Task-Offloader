@@ -68,6 +68,7 @@ def upload_allotment_to_queue(dist:dict,conn) -> dict:
     return
  
 def periodic_Worker_Pool_Check(conn,tasks_cluster):
+    
     c=conn.cursor()
     while True:
         # print("Executing periodic task")
@@ -80,7 +81,7 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
                 c.execute("DELETE FROM WORKER_POOL WHERE EDGE_ID=?", (r[0],))
                 # NO_OF_EDGE_DEVICES -= 1
             conn.commit()
-            
+            print("Worker pool updated.")
             #delete tasks assigned to the worker
             task_ids = c.execute("SELECT TASK_ID FROM TASK_QUEUE WHERE EDGE=?", (r[0],)).fetchall()
             if not task_ids:
@@ -108,8 +109,13 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
         
         time.sleep(60)  # Execute every 60 seconds
 
-def start_Periodic_Worker_Pool_Check(conn,tasks_cluster):
-    thread = threading.Thread(target=periodic_Worker_Pool_Check,args=(conn,tasks_cluster,))
+def get_New_Queue_conn(check_same_thrd=False):
+    conn = sqlite3.connect('queue.db', check_same_thread=check_same_thrd)
+    return conn
+    pass
+
+def start_Periodic_Worker_Pool_Check(tasks_cluster):
+    thread = threading.Thread(target=periodic_Worker_Pool_Check,args=(get_New_Queue_conn(),tasks_cluster,))
     thread.daemon = True  # Daemonize thread to exit when the main program exits
     thread.start()
 
@@ -131,14 +137,16 @@ if __name__ == '__main__':
     if not os.path.exists('queue.db'):
         open('queue.db', 'w').close()
     
-    conn = sqlite3.connect('queue.db', check_same_thread=False)
+    conn = get_New_Queue_conn()
     c = conn.cursor()
     
     c.execute('''CREATE TABLE IF NOT EXISTS TASK_QUEUE (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
     c.execute('''CREATE TABLE IF NOT EXISTS WORKER_POOL (EDGE_ID STRING PRIMARY KEY, TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     
     #start the periodic worker pool check thread
-    start_Periodic_Worker_Pool_Check(conn,tasks_cluster)
+    time.sleep(2)
+    start_Periodic_Worker_Pool_Check(tasks_cluster)
+    time.sleep(2)
     
     edge_computation_power = 0.2
     cloud_computation_power = 1.0
@@ -183,7 +191,7 @@ if __name__ == '__main__':
                 if task_count % 10 == 0:
                     agent.update_target_network()
                 
-                tasks_cluster.update_one({'_id': ObjectId(undone_tasks[i])}, {'$set': {'picked_at': datetime.now().strftime('%H:%M:%S')}})
+                tasks_cluster.update_one({'_id': ObjectId(undone_tasks[i])}, {'$set': {'picked_at': datetime.now()}})
                 tasks_cluster.update_one({'_id': ObjectId(undone_tasks[i])}, {'$set': {'assigned_to': 'Edge' if action == 0 else 'cloud'}}) 
                
                 
