@@ -1,8 +1,8 @@
-import cv2
+import imageio
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
+import cv2
 def plot_detections(image, results):
     fig, ax = plt.subplots(1)
     ax.imshow(image)
@@ -25,33 +25,21 @@ def plot_detections(image, results):
 
     plt.axis('off')
     return
-    # plt.show()
 
-def process_video(video_path, new_filename,filename ,file_extension, task_id):
+def process_video(video_path, new_filename, filename, file_extension, task_id):
     # Load the YOLOv8 model
     model = YOLO('yolov8n.pt')  # Adjust to yolov8m.pt, yolov8l.pt, etc. as needed
 
     # Open the video file
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        raise FileNotFoundError(f"Error: Unable to open video file {video_path}")
-
-    # Get video properties
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    reader = imageio.get_reader(video_path)
+    fps = reader.get_meta_data()['fps']
 
     # Create a VideoWriter object to save the output video
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
     save_dir = 'working_files'
     output_path = f"{save_dir}/{new_filename}{file_extension}"
-    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+    writer = imageio.get_writer(output_path, fps=fps)
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
+    for frame in reader:
         # Perform object detection
         results = model(frame)
 
@@ -66,15 +54,16 @@ def process_video(video_path, new_filename,filename ,file_extension, task_id):
                 class_id = int(boxes.cls[i])
                 label = f"{names[class_id]} {confidence:.2f}"
 
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                frame = cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                frame = cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        out.write(frame)
+        writer.append_data(frame)
 
-    cap.release()
-    out.release()
+    reader.close()
+    writer.close()
     return output_path
 
+# Example usage
 # if __name__ == "__main__":
-#     video_output = process_video(r'working_files/d.mp4', 'processed_video', '.mp4', 'task2')
+#     video_output = process_video(r'D:/Task-Offloader/tasks/videos/d.mp4', 'processed_video', 'd', '.mp4', 'task2')
 #     print(f"Processed video saved to {video_output}")
