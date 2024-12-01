@@ -10,7 +10,7 @@ countryName                = yourcontryname
 stateOrProvinceName        = yourprovince
 localityName               = yourlocality
 organizationName           = your_organization
-commonName                 = your_domain
+commonName                 = 127.0.0.1
 
 [ req_ext ]
 subjectAltName = @alt_names
@@ -19,4 +19,4 @@ subjectAltName = @alt_names
 subjectAltName = @alt_names
 
 [ alt_names ]
-IP.1   = your_ip
+IP.1   = 127.0.0.1
