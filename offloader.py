@@ -11,6 +11,9 @@ from bson import ObjectId
 pso_param={}
 
 NO_OF_EDGE_DEVICES = 3
+edge_computation_power = 0.2
+
+
 
 def connect_To_DB():
     load_dotenv()
@@ -72,9 +75,11 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
     c=conn.cursor()
     while True:
         # print("Executing periodic task")
+        edges=[]
         row=c.execute("SELECT * FROM WORKER_POOL")
-        
+
         for r in row:
+            edges.append(r[0])
             #delete worker from pool if idle for more than 5 minutes
             timestamp = datetime.strptime(r[1], '%Y-%m-%d %H:%M:%S.%f')
             if (datetime.now()-timestamp).seconds > 300:
@@ -98,21 +103,36 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
                 c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t[0],))
                 conn.commit()
                 
+            x=c.execute("SELECT * FROM COMPUTATION_POWER")
+            
+            
+            for i in x:
+                if i[0]==r[0]:
+                    c.execute("DELETE FROM COMPUTATION_POWER WHERE EDGE=?", (r[0],))
+                    conn.commit()
+            
             print(f"Worker {r[0]} removed from pool due to inactivity.")
         
-        # Your periodic task code here
-        row=c.execute("SELECT * FROM WORKER_POOL").fetchall()
+        # row=c.execute("SELECT * FROM WORKER_POOL").fetchall()
         global NO_OF_EDGE_DEVICES
         
-        if NO_OF_EDGE_DEVICES != len(row):
-            NO_OF_EDGE_DEVICES = len(row)
+        if NO_OF_EDGE_DEVICES != len(edges):
+            NO_OF_EDGE_DEVICES = len(edges)
         
+        sums=0
+        comps=c.execute("SELECT POWER FROM COMPUTATION_POWER ").fetchall()
+        for i in comps:
+            sums+=i[0]
+        global edge_computation_power
+        edge_computation_power=round(sums/NO_OF_EDGE_DEVICES,2)
+        
+       
         time.sleep(60)  # Execute every 60 seconds
 
 def get_New_Queue_conn(check_same_thrd=False):
     conn = sqlite3.connect('queue.db', check_same_thread=check_same_thrd)
     return conn
-    pass
+   
 
 def start_Periodic_Worker_Pool_Check(tasks_cluster):
     thread = threading.Thread(target=periodic_Worker_Pool_Check,args=(get_New_Queue_conn(),tasks_cluster,))
@@ -129,7 +149,8 @@ if __name__ == '__main__':
     agent = DQNAgent(state_size, action_size)
     
     # if os.path.exists('queue.db'):
-    #     os.remove('queue.db')
+    
+    cloud_computation_power = 1.0
     
     db=connect_To_DB()
     tasks_cluster = db['tasks']
@@ -147,13 +168,12 @@ if __name__ == '__main__':
     time.sleep(2)
     start_Periodic_Worker_Pool_Check(tasks_cluster)
     time.sleep(2)
-    
-    edge_computation_power = 0.2
-    cloud_computation_power = 1.0
+
     
     undone_tasks=[]
     try:
         while True:
+            print('using computation power',edge_computation_power)
             for task in tasks_cluster.find({"picked_at": None}):
                 undone_tasks.append(task.get('_id'))
             

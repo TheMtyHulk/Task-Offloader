@@ -13,6 +13,19 @@ from bson import ObjectId
 import jwt
 from dotenv import load_dotenv
 from grpc import ssl_channel_credentials
+import psutil
+
+
+def get_Computation_Power():
+    # Get the CPU usage percentage
+    cpu_usage = psutil.cpu_percent()
+    # Get the memory usage percentage
+    memory_usage = psutil.virtual_memory().percent
+    avg_util=(cpu_usage+memory_usage)/2
+    computation_power=(100-avg_util)/100
+    computation_power=round(computation_power,2)
+
+    return computation_power
 
 def compute(task_id, db):
     try:
@@ -133,7 +146,6 @@ def generate_jwt(edge_id):
     return token
 
 def run_worker(edge_id):
-    
     try:
         with open('openssl-keys/server.crt', 'rb') as f:
             certificate_chain = f.read()
@@ -146,8 +158,18 @@ def run_worker(edge_id):
     stub = coordinator_pb2_grpc.CoordinatorServiceStub(channel)
 
     def heartbeat_stream():
+        last_time_comp_pow_sent=0
         while True:
-            yield coordinator_pb2.HeartbeatRequest(edgeId=edge_id)
+            current_time = time.time()
+            
+            if current_time - last_time_comp_pow_sent >= 60:
+                pow = get_Computation_Power()
+                yield coordinator_pb2.HeartbeatRequest(edgeId=edge_id, computation_power=pow)
+                last_time_comp_pow_sent = current_time
+                
+            else:
+                yield coordinator_pb2.HeartbeatRequest(edgeId=edge_id)
+            
             time.sleep(5)  # Send heartbeat every 5 seconds
     
     token = generate_jwt(edge_id)
