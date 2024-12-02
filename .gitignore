@@ -17,7 +17,9 @@ image_processing/test.py
 
 image_processing/d.mp4
 image_processing/t2.py
-
+openssl-keys/server.key
+openssl-keys/server.crt
+openssl-keys/server.csr
 download_files.py
 yolov8n.pt
 assets/

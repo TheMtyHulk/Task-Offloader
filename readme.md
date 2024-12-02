@@ -1,4 +1,4 @@
-# Task Offloading System
+# Task offloader
 
 This project is a task offloading system that allows users to upload tasks (files) and distribute them for processing across edge and cloud resources. The system uses a combination of Deep Q-Network (DQN) and Particle Swarm Optimization (PSO) algorithms to optimize task assignments.
 

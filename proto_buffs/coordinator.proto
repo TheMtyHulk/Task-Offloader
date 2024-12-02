@@ -4,6 +4,7 @@ package coordinator;
 
 message HeartbeatRequest {
     string edgeId = 1;
+    float computation_power = 2;
 }
 
 message TaskResponse {

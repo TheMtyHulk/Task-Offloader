@@ -6,7 +6,10 @@ import os
 import grpc
 import time
 import sqlite3
-import threading
+
+from dotenv import load_dotenv
+import jwt
+import logging
 
 worker_set=set()
 
@@ -20,7 +23,8 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
         #create worker pool and task queue tables if not exist
         self.c.execute('''CREATE TABLE IF NOT EXISTS WORKER_POOL (EDGE_ID STRING PRIMARY KEY, TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP)''')
         self.c.execute('''CREATE TABLE IF NOT EXISTS TASK_QUEUE (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
-
+        self.c.execute('''CREATE TABLE IF NOT EXISTS COMPUTATION_POWER(EDGE STRING PRIMARY KEY, POWER REAL)''')
+       
         # self.start_periodic_task()
 
 
@@ -64,14 +68,36 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
         self.c.connection.commit()
         return
     
+    def update_Computation_Power(self, EDGE_ID, pow):
+        pow=round(pow,2)
+        # Check if the EDGE_ID already exists in the table
+        temp = self.c.execute("SELECT * FROM COMPUTATION_POWER WHERE EDGE=:edge_id", {"edge_id": EDGE_ID})
+        
+        if temp.fetchone():
+            # If EDGE_ID exists, update the computation power
+            self.c.execute(
+                "UPDATE COMPUTATION_POWER SET POWER=:power WHERE EDGE=:edge_id",
+                {"power": pow, "edge_id": EDGE_ID}
+            )
+        else:
+            # If EDGE_ID does not exist, insert a new record
+            self.c.execute(
+                "INSERT INTO COMPUTATION_POWER (EDGE, POWER) VALUES (:edge_id, :power)",
+                {"edge_id": EDGE_ID, "power": pow}
+            )
+        
+        # Commit the transaction
+        self.c.connection.commit()
+    
     def HeartbeatStream(self, request_iterator, context):
         for request in request_iterator:
             
-            # if request.edgeId not in worker_set:
-                # worker_set.add(request.edgeId)
+            #add edge device to worker pool
             if request.edgeId :
                 self.add_Worker_To_Pool(request.edgeId)
-            
+            if request.computation_power:
+                self.update_Computation_Power(request.edgeId,request.computation_power)
+             
             print(f"Received heartbeat from edge {request.edgeId}")
             # tasks = self.tasks.get(request.workerId, [])
             tasks=self.get_Task_Assignment_From_Queue(request.edgeId)
@@ -91,10 +117,45 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
             yield response
           
 
+class JWTAuthInterceptor(grpc.ServerInterceptor):
+    def __init__(self, secret_key):
+        self.secret_key = secret_key
+
+    def intercept_service(self, continuation, handler_call_details):
+        metadata = dict(handler_call_details.invocation_metadata)
+        token = metadata.get('authorization')
+        if not token:
+            context = handler_call_details.invocation_metadata
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Authorization token is missing')
+        try:
+            jwt.decode(token, self.secret_key, algorithms=['HS256'])
+            # print(f"Authentication successful for token: {token}")
+            logging.info(f"Authentication successful for token: {token}")
+        except jwt.ExpiredSignatureError:
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Token has expired')
+        except jwt.InvalidTokenError:
+            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Invalid token')
+        return continuation(handler_call_details)
+
+
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    load_dotenv()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), interceptors=[JWTAuthInterceptor(os.getenv('JWT_SECRET'))])
     coordinator_pb2_grpc.add_CoordinatorServiceServicer_to_server(CoordinatorService(), server)
-    server.add_insecure_port('localhost:50051')
+    
+    #load SSL/TLS certificate
+    try:
+        with open('openssl-keys/server.crt', 'rb') as f:
+            certificate_chain = f.read()
+        with open('openssl-keys/server.key', 'rb') as f:
+            private_key = f.read()
+    except FileNotFoundError:
+        print("Certificate and/or private key file not found")
+        return
+    
+    server_credentials = grpc.ssl_server_credentials([(private_key, certificate_chain,)])
+    server.add_secure_port('[::]:50051', server_credentials)
     server.start()
     # server.wa
     print("Server started, listening on port 50051.")
@@ -102,11 +163,6 @@ def serve():
         server.wait_for_termination()
     except KeyboardInterrupt:
         server.stop(0)
-        
-    #     while True:
-    #         time.sleep(86400)  # Keep the server running for 24 hours
-    # except KeyboardInterrupt:
-    #     server.stop(0)
     server.wait_for_termination()
 
 if __name__ == '__main__':
