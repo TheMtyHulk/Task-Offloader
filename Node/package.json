@@ -12,6 +12,7 @@
   "author": "Rehnkhan",
   "license": "MIT",
   "dependencies": {
+    "chartjs-node-canvas": "^4.1.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.5",

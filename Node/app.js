@@ -9,6 +9,7 @@ const GridFsStorage = require("multer-gridfs-storage");
 const { v4: uuidv4 } = require('uuid');
 const { MongoClient } = require('mongodb');
 const GridFSBucket = require('mongodb').GridFSBucket;
+const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 
 // Middlewares
 app.use(express.json());
@@ -201,7 +202,7 @@ app.post("/schedule-tasks", async (req, res) => {
       await tasksCollection.insertMany(newTasks);
     }
 
-    res.status(200).json({ message: "Tasks scheduled successfully" });
+    // res.status(200).json({ message: "Tasks scheduled successfully" });
     
   } catch (err) {
     res.status(500).json({ err: err.message });
@@ -352,7 +353,7 @@ app.get("/computed_at_count", async (req, res) => {
   try {
     const tasksCollection = conn.db.collection("tasks");
     const cloudCount = await tasksCollection.countDocuments({ assigned_to: "cloud" });
-    const edgeCount = await tasksCollection.countDocuments({ assigned_to: "edge" });
+    const edgeCount = await tasksCollection.countDocuments({ assigned_to: "Edge" });
 
     return res.json({
       cloud: cloudCount,
@@ -363,7 +364,97 @@ app.get("/computed_at_count", async (req, res) => {
   }
 });
 
+// @route GET /filetype/:id
+// @desc  Check the type of file (image or video) using id
+app.get("/filetype_count", async (req, res) => {
+  try {
+    const filesCollection = conn.db.collection("fs.files");
+    const imageCount = await filesCollection.countDocuments({ contentType: { $in: ["image/png", "image/jpeg"] } });
+    const videoCount = await filesCollection.countDocuments({ contentType: { $in: ["video/mp4", "video/mpeg"] } });
+
+    return res.json({
+      images: imageCount,
+      videos: videoCount
+    });
+  } catch (err) {
+    return res.status(500).json({ err: err.message });
+  }
+});
 const port = process.env.port || 5002;
+
+// @route GET /file_sizes
+// @desc  Get file size in MB of each file and time to complete the task
+app.get("/file_sizes", async (req, res) => {
+  try {
+    const tasksCollection = conn.db.collection("tasks");
+    const files = await tasksCollection.find().toArray();
+
+    const tasksColl = conn.db.collection("fs.files");
+    const fil = await tasksColl.find().toArray();
+
+    if (!files || files.length === 0) {
+      return res.status(404).json({
+        err: "No files exist in tasks collection"
+      });
+    }
+
+    const fileSizes = fil.map(file => {
+      const sizeInMB = fil.length / (1024 * 1024); // Convert bytes to MB
+      const timeToComplete = file.completed_at && file.started_at 
+        ? (new Date(file.completed_at) - new Date(file.started_at)) / 1000 // Convert milliseconds to seconds
+        : null;
+
+      return {
+        _id: file._id,
+        filename: file.filename,
+        sizeInMB: sizeInMB.toFixed(2),
+        timeToComplete: timeToComplete ? timeToComplete + " seconds" : "Not completed"
+      };
+    });
+
+    return res.json(fileSizes);
+  } catch (err) {
+    return res.status(500).json({ err: err.message });
+  }
+});
+
+// @route GET /file_sizes_with_time
+app.get("/file_sizes_with_time", async (req, res) => {
+ try {
+    const filesCollection = conn.db.collection("fs.files");
+    const tasksCollection = conn.db.collection("tasks");
+  
+    const files = await filesCollection.find().toArray();
+    const tasks = await tasksCollection.find().toArray();
+
+    if (!files || files.length === 0) {
+     return res.status(404).json({
+        err: "No files exist in fs.files collection"
+      });
+    }
+
+    const fileSizesWithTime = files.map(file => {
+      const task = tasks.find(task => task._id.toString() === file._id.toString());
+      const sizeInMB = file.length / (1024 * 1024); // Convert bytes to MB
+      const timeToComplete = task && task.completed_at && task.started_at 
+        ? (new Date(task.completed_at) - new Date(task.started_at)) / 1000 // Convert milliseconds to seconds
+        : null;
+
+      return {
+        _id: file._id,
+        filename: file.filename,
+        sizeInMB: sizeInMB.toFixed(2),
+        timeToComplete: timeToComplete ? timeToComplete + " seconds" : "Not completed"
+      };
+    });
+
+    return res.json(fileSizesWithTime);
+  } catch (err) {
+     return res.status(500).json({ err: err.message });
+  }});
+
+
+
 
 app.listen(port, () => {
   console.log("server started on " + port);
