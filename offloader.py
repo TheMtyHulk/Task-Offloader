@@ -82,7 +82,7 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
             edges.append(r[0])
             #delete worker from pool if idle for more than 5 minutes
             timestamp = datetime.strptime(r[1], '%Y-%m-%d %H:%M:%S.%f')
-            if (datetime.now()-timestamp).seconds > 300:
+            if (datetime.now()-timestamp).seconds > 180:
                 c.execute("DELETE FROM WORKER_POOL WHERE EDGE_ID=?", (r[0],))
                 # NO_OF_EDGE_DEVICES -= 1
             conn.commit()
@@ -124,10 +124,11 @@ def periodic_Worker_Pool_Check(conn,tasks_cluster):
         for i in comps:
             sums+=i[0]
         global edge_computation_power
-        edge_computation_power=round(sums/NO_OF_EDGE_DEVICES,2)
+        if NO_OF_EDGE_DEVICES!=0:
+            edge_computation_power=round(sums/NO_OF_EDGE_DEVICES,2)
         
        
-        time.sleep(60)  # Execute every 60 seconds
+        time.sleep(30)  # Execute every 60 seconds
 
 def get_New_Queue_conn(check_same_thrd=False):
     conn = sqlite3.connect('queue.db', check_same_thread=check_same_thrd)
@@ -176,7 +177,7 @@ if __name__ == '__main__':
             print('using computation power',edge_computation_power)
             for task in tasks_cluster.find({"picked_at": None}):
                 undone_tasks.append(task.get('_id'))
-            
+            print("no of edge dev",NO_OF_EDGE_DEVICES)
             if not undone_tasks:
                 print("no tasks to offload")
                 time.sleep(5)
@@ -214,24 +215,30 @@ if __name__ == '__main__':
                 tasks_cluster.update_one({'_id': ObjectId(undone_tasks[i])}, {'$set': {'picked_at': datetime.now()}})
                 tasks_cluster.update_one({'_id': ObjectId(undone_tasks[i])}, {'$set': {'assigned_to': 'Edge' if action == 0 else 'cloud'}}) 
                
-                
-                if action == 0:
-                    # edge_task_ids.append(undone_tasks[i])
-                    pso_param[undone_tasks[i]] = task_size.get(undone_tasks[i])
-                    
+                if NO_OF_EDGE_DEVICES != 0:
+                    if action == 0:
+                        pso_param[undone_tasks[i]] = task_size.get(undone_tasks[i])
+                elif NO_OF_EDGE_DEVICES==0:
+                    if action == 0:
+                        tasks_cluster.update_one({'_id': ObjectId(undone_tasks[i])}, {'$set': {'assigned_to': 'cloud'}}) 
+                    continue
                 print(f"Task {undone_tasks[i]}: Allocated to {'Edge' if action == 0 else 'Cloud'}")
             
             # get pso distribution
-            print('NO_OF_EDGE_DEVICES: ',NO_OF_EDGE_DEVICES)
-            t=pso.Task_Assignment_Calc(NO_OF_EDGE_DEVICES,pso_param)
-            dist=t.get_distribution()
-            
-            #upload the distribution to the local file queue i.e. sqlite
-            #
-            for i in dist:
-                print(f"Task {i} is assigned to {dist[i]}")
+            if NO_OF_EDGE_DEVICES != 0:
+                
+                print('NO_OF_EDGE_DEVICES: ',NO_OF_EDGE_DEVICES)
+                t=pso.Task_Assignment_Calc(NO_OF_EDGE_DEVICES,pso_param)
+                dist=t.get_distribution()
+                
+                #upload the distribution to the local file queue i.e. sqlite
                 #
-            upload_allotment_to_queue(dist,conn)
+                for i in dist:
+                    print(f"Task {i} is assigned to {dist[i]}")
+                    #
+                upload_allotment_to_queue(dist,conn)
+                pso_param.clear()
+                
     
             
             #never delete this shit
