@@ -18,7 +18,6 @@ function loadFiles(files) {
             
             const card = document.createElement('div');
             card.className = 'card mb-3';
-            // card.style.width = '1000px';
 
             //card header
             const cardHeader = document.createElement('div');

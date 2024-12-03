@@ -22,6 +22,5 @@ openssl-keys/server.crt
 openssl-keys/server.csr
 download_files.py
 yolov8n.pt
-assets/
 index1.html
 .vscode/

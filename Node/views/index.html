@@ -77,41 +77,39 @@
        
       </ul>
     </div>
-    <div class="sidenav-footer position-absolute w-100 bottom-0 ">
+    <!-- <div class="sidenav-footer position-absolute w-100 bottom-0 ">
       <div class="mx-3">
         <a class="btn btn-outline-dark mt-4 w-100" href="https://www.creative-tim.com/learning-lab/bootstrap/overview/material-dashboard?ref=sidebarfree" type="button">Documentation</a>
         <a class="btn bg-gradient-dark w-100" href="https://www.creative-tim.com/product/material-dashboard-pro?ref=sidebarfree" type="button">Upgrade to pro</a>
       </div>
-    </div>
+    </div> -->
   </aside>
-  <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
-<!-- 
-<div style="background-image: url('https://dm0qx8t0i9gc9.cloudfront.net/thumbnails/video/rN0W64K4ipau8gxv/videoblocks-cloud-computing-concept-animation-cloud-technology-background-cloud-storage-cloud-symbol-placed-in-cube-after-firewall-seamless-loop-animation_h8ukxewbx_thumbnail-1080_01.png'); background-size: cover;height:200px; background-position: center;border-radius: 25px;"> -->
-<div style="background-color: black;">
-  <h1 class="my-4" style="color:rgb(186, 226, 43);"></h1><br>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <div class="custom-file ">
-            <input type="file" class="custom-file-input" name="files" id="files" multiple onchange="readMultipleFiles(this.files)" style="width:fit-content;">
-         
-            <input type="hidden" name="conversionType" value="ImageProcessing">
-			
-			<div class="text-center">
-				<label class="custom-file-label bg-white" for="files" id="file-label" style="width:800px; margin-left:20%;">Choose files</label>
-			</div>
-			
-        </div>
-        <div class="text-center">
-            <input type="submit" value="Submit" class="btn btn-primary">
-        </div>
-    </form>
+  <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg background-image: url('https://dm0qx8t0i9gc9.cloudfront.net/thumbnails/video/rN0W64K4ipau8gxv/videoblocks-cloud-computing-concept-animation-cloud-technology-background-cloud-storage-cloud-symbol-placed-in-cube-after-firewall-seamless-loop-animation_h8ukxewbx_thumbnail-1080_01.png');background-size: cover;height:200px; background-position: center;border-radius: 25px;">
+
+<br> 
 </div>
 <div class="container-fluid py-2">
   <div class="row">
         <div class="col-12">
-          <div class="card my-4">
+            <div class="card my-4">
             <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
               <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
-                <h6 class="text-white text-capitalize ps-3">Authors table</h6>
+                <h6 class="text-white text-capitalize ps-3">Files</h6>
+                <form action="/upload" method="post" enctype="multipart/form-data">
+                  <div class="custom-file ">
+                      <input type="file" class="custom-file-input" name="files" id="files" multiple onchange="readMultipleFiles(this.files)" style="width:fit-content;">
+                   
+                      <input type="hidden" name="conversionType" value="ImageProcessing">
+                
+                <div class="text-center">
+                  <label class="custom-file-label bg-white" for="files" id="file-label" style="width:800px; margin-left:20%;">Choose files</label>
+                </div>
+                
+                  </div>
+                  <div class="text-center">
+                      <input type="submit" value="Submit" class="btn btn-primary">
+                  </div>
+              </form>
               </div>
             </div>
             <div class="card-body px-0 pb-2">

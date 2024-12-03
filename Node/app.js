@@ -37,6 +37,8 @@ const conn = mongoose.createConnection(mongoURI, {
   useUnifiedTopology: true
 });
 
+conn.on('error', console.error.bind(console, 'MongoDB connection error:'));
+
 app.use(cors({
   methods:'POST',
   origin:'*'
@@ -48,6 +50,80 @@ conn.once("open", () => {
   // init stream
   gfs = new mongoose.mongo.GridFSBucket(conn.db, {
     bucketName: "fs"
+  });
+});
+
+
+// @route GET /files
+// @desc  Display all the files in JSON
+
+app.get("/files", (req, res) => {
+  gfs.find().toArray((err, files) => {
+    // check if files
+    if (!files || files.length === 0) {
+      return res.status(404).json({
+        err: "no files exist"
+      });
+    } 
+
+    return res.json(files);
+  });
+});
+
+// to fetch file using filename 
+app.get("/files/:filename", (req, res) => {
+    const file = gfs
+    .find({
+      filename: req.params.filename
+    })
+    .toArray((err, files) => {
+      if (!files || files.length === 0) {
+        return res.status(404).json({
+          err: "no files exist"
+        });
+      }
+      gfs.openDownloadStreamByName(req.params.filename).pipe(res);
+    });
+});
+
+
+app.get("/image/:filename", (req, res) => {
+  console.log('id', req.params.id)
+  const file = gfs
+    .find({
+      filename: req.params.filename
+    })
+    .toArray((err, files) => {
+      if (!files || files.length === 0) {
+        return res.status(404).json({
+          err: "no files exist"
+        });
+      }
+      gfs.openDownloadStreamByName(req.params.filename).pipe(res);
+    });
+});
+
+// files/del/:id
+// Delete chunks from the db
+app.post("/files/del/:id", (req, res) => {
+  const tasksCollection = conn.db.collection("tasks");
+  tasksCollection.deleteOne({ _id: new mongoose.Types.ObjectId(req.params.id) });
+  gfs.delete(new mongoose.Types.ObjectId(req.params.id), (err, data) => {
+    if (err) return res.status(404).json({ err: err.message });
+    res.redirect("/");
+  });
+});
+
+// @route GET /file/:id
+// @desc  Display single file object
+app.get("/file/:id", (req, res) => {
+  gfs.find({ _id: new mongoose.Types.ObjectId(req.params.id) }).toArray((err, files) => {
+    if (!files || files.length === 0) {
+      return res.status(404).json({
+        err: "no files exist"
+      });
+    }
+    return res.json(files[0]);
   });
 });
 
@@ -208,83 +284,6 @@ app.post("/schedule-tasks", async (req, res) => {
     res.status(500).json({ err: err.message });
   }
 });
-
-
-// @route GET /files
-// @desc  Display all the files in JSON
-
-app.get("/files", (req, res) => {
-  gfs.find().toArray((err, files) => {
-    // check if files
-    if (!files || files.length === 0) {
-      return res.status(404).json({
-        err: "no files exist"
-      });
-    } 
-
-    return res.json(files);
-  });
-});
-
-// to fetch file using filename 
-app.get("/files/:filename", (req, res) => {
-    const file = gfs
-    .find({
-      filename: req.params.filename
-    })
-    .toArray((err, files) => {
-      if (!files || files.length === 0) {
-        return res.status(404).json({
-          err: "no files exist"
-        });
-      }
-      gfs.openDownloadStreamByName(req.params.filename).pipe(res);
-    });
-});
-
-
-app.get("/image/:filename", (req, res) => {
-  console.log('id', req.params.id)
-  const file = gfs
-    .find({
-      filename: req.params.filename
-    })
-    .toArray((err, files) => {
-      if (!files || files.length === 0) {
-        return res.status(404).json({
-          err: "no files exist"
-        });
-      }
-      gfs.openDownloadStreamByName(req.params.filename).pipe(res);
-    });
-});
-
-// files/del/:id
-// Delete chunks from the db
-app.post("/files/del/:id", (req, res) => {
-  const tasksCollection = conn.db.collection("tasks");
-  tasksCollection.deleteOne({ _id: new mongoose.Types.ObjectId(req.params.id) });
-  gfs.delete(new mongoose.Types.ObjectId(req.params.id), (err, data) => {
-    if (err) return res.status(404).json({ err: err.message });
-    res.redirect("/");
-  });
-});
-
-
-
-// @route GET /file/:id
-// @desc  Display single file object
-app.get("/file/:id", (req, res) => {
-  gfs.find({ _id: new mongoose.Types.ObjectId(req.params.id) }).toArray((err, files) => {
-    if (!files || files.length === 0) {
-      return res.status(404).json({
-        err: "no files exist"
-      });
-    }
-    return res.json(files[0]);
-  });
-});
-
 // @route GET /filedetails/:id
 // @desc  Display single file object from tasks collection using id
 app.get("/filedetails/:id", async (req, res) => {
