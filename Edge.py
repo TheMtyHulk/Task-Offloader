@@ -106,8 +106,8 @@ def compute_img(file_path,new_filename,filename,file_extension,task_id,fs):
     # Delete the computed file
     print(computed_file_path)
     print(file_path)
-    # os.remove(computed_file_path)
-    # os.remove(file_path)
+    os.remove(computed_file_path)
+    os.remove(file_path)
     return
 
 
