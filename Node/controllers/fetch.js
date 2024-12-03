@@ -57,3 +57,33 @@ async function handleUploadAndSchedule(event) {
       document.getElementById('message').innerText = 'Error scheduling tasks';
     }
   }
+
+  document.getElementById('delete-all').addEventListener('click', async function() {
+    try {
+      const response = await fetch('/delete-all', {
+        method: 'DELETE'
+      });
+
+      const result = await response.json();
+      window.location.reload();
+      document.getElementById('message').innerText = result.message || result.err;
+    } catch (err) {
+      document.getElementById('message').innerText = 'Error deleting files';
+    }
+  });
+
+  // Show delete button only when files are in the database
+  document.addEventListener('DOMContentLoaded', async function() {
+    try {
+      const response = await fetch('/files');
+      const files = await response.json();
+
+      if (files.length > 0) {
+        
+      } else {
+        document.getElementById('delete-all').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error fetching files:', error);
+    }
+  });

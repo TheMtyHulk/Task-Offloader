@@ -114,6 +114,37 @@ app.post("/files/del/:id", (req, res) => {
   });
 });
 
+// @route DELETE /delete-all
+// @desc  Delete all records from the database
+app.delete("/delete-all", async (req, res) => {
+  try {
+    const filesCollection = conn.db.collection("fs.files");
+    const chunksCollection = conn.db.collection("fs.chunks");
+    const tasksCollection = conn.db.collection("tasks");
+
+    await filesCollection.deleteMany({});
+    await chunksCollection.deleteMany({});
+    await tasksCollection.deleteMany({});
+
+    res.status(200).json({ message: "All records deleted successfully" });
+    
+  } catch (err) {
+    res.status(500).json({ err: err.message });
+  }
+});
+
+// @route DELETE /drop-database
+// @desc  Drop the entire database
+app.delete("/drop-database", async (req, res) => {
+  try {
+    await conn.db.dropDatabase();
+    res.status(200).json({ message: "Database dropped successfully" });
+  } catch (err) {
+    res.status(500).json({ err: err.message });
+  }
+});
+
+
 // @route GET /file/:id
 // @desc  Display single file object
 app.get("/file/:id", (req, res) => {
