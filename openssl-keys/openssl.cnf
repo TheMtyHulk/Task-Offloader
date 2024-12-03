@@ -6,10 +6,10 @@ x509_extensions    = v3_req
 prompt             = no
 
 [ req_distinguished_name ]
-countryName                = yourcontryname
-stateOrProvinceName        = yourprovince
-localityName               = yourlocality
-organizationName           = your_organization
+countryName                = IN
+stateOrProvinceName        = Karnataka
+localityName               = shimoga
+organizationName           = jingjanjigi
 commonName                 = 127.0.0.1
 
 [ req_ext ]
