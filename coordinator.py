@@ -6,10 +6,10 @@ import os
 import grpc
 import time
 import sqlite3
-from utils.auth_interceptor import JWTAuthInterceptor
-from utils.update_computaion_pow import update_Computation_Power
-from utils.get_task_assignment import get_Task_Assignment_From_Queue
-from utils.add_worker_to_pool import add_Worker_To_Pool
+from utils.coordinator.auth_interceptor import JWTAuthInterceptor
+from utils.coordinator.update_computaion_pow import update_Computation_Power
+from utils.coordinator.get_task_assignment import get_Task_Assignment_From_Queue
+from utils.coordinator.add_worker_to_pool import add_Worker_To_Pool
 from dotenv import load_dotenv
 import jwt
 import logging
