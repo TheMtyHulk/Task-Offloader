@@ -6,7 +6,10 @@ import os
 import grpc
 import time
 import sqlite3
-
+from utils.auth_interceptor import JWTAuthInterceptor
+from utils.update_computaion_pow import update_Computation_Power
+from utils.get_task_assignment import get_Task_Assignment_From_Queue
+from utils.add_worker_to_pool import add_Worker_To_Pool
 from dotenv import load_dotenv
 import jwt
 import logging
@@ -25,82 +28,22 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
         self.c.execute('''CREATE TABLE IF NOT EXISTS TASK_QUEUE (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
         self.c.execute('''CREATE TABLE IF NOT EXISTS COMPUTATION_POWER(EDGE STRING PRIMARY KEY, POWER REAL)''')
        
-        # self.start_periodic_task()
+        self.c.connection.commit()
 
 
-    def get_Task_Assignment_From_Queue(self,EDGE_ID):
-        tasks =[]
-        self.c.execute("SELECT TASK_ID FROM TASK_QUEUE WHERE EDGE=?", (EDGE_ID,))
-        loc_db_tasks = self.c.fetchall()
         
-        if loc_db_tasks:
-            
-            for t in loc_db_tasks:
-                tasks.append(t[0])
-            print(",".join(tasks))
-            
-            for t in tasks:    
-                self.c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t,))
-            self.c.connection.commit()
-            
-            return ",".join(tasks)
-        
-        return None
-    
-    
-    #add edge device to worker pool
-    def add_Worker_To_Pool(self, EDGE_ID):
-        temp = self.c.execute("SELECT * FROM WORKER_POOL WHERE EDGE_ID=:edge_id", {"edge_id": EDGE_ID})
-        
-        # if worker already in pool, update timestamp
-        if temp.fetchone():
-            self.c.execute(
-                "UPDATE WORKER_POOL SET TIMESTAMP=:timestamp WHERE EDGE_ID=:edge_id",
-                {"timestamp": datetime.now(), "edge_id": EDGE_ID}
-            )
-            self.c.connection.commit()
-            return
-        
-        self.c.execute(
-            "INSERT INTO WORKER_POOL (EDGE_ID, TIMESTAMP) VALUES (:edge_id, :timestamp)",
-            {"edge_id": EDGE_ID, "timestamp": datetime.now()}
-        )
-        self.c.connection.commit()
-        return
-    
-    def update_Computation_Power(self, EDGE_ID, pow):
-        pow=round(pow,2)
-        # Check if the EDGE_ID already exists in the table
-        temp = self.c.execute("SELECT * FROM COMPUTATION_POWER WHERE EDGE=:edge_id", {"edge_id": EDGE_ID})
-        
-        if temp.fetchone():
-            # If EDGE_ID exists, update the computation power
-            self.c.execute(
-                "UPDATE COMPUTATION_POWER SET POWER=:power WHERE EDGE=:edge_id",
-                {"power": pow, "edge_id": EDGE_ID}
-            )
-        else:
-            # If EDGE_ID does not exist, insert a new record
-            self.c.execute(
-                "INSERT INTO COMPUTATION_POWER (EDGE, POWER) VALUES (:edge_id, :power)",
-                {"edge_id": EDGE_ID, "power": pow}
-            )
-        
-        # Commit the transaction
-        self.c.connection.commit()
-    
     def HeartbeatStream(self, request_iterator, context):
         for request in request_iterator:
             
             #add edge device to worker pool
             if request.edgeId :
-                self.add_Worker_To_Pool(request.edgeId)
+                add_Worker_To_Pool(request.edgeId,self.c)
             if request.computation_power:
-                self.update_Computation_Power(request.edgeId,request.computation_power)
+                update_Computation_Power(request.edgeId,request.computation_power,self.c)
              
             print(f"Received heartbeat from edge {request.edgeId}")
             # tasks = self.tasks.get(request.workerId, [])
-            tasks=self.get_Task_Assignment_From_Queue(request.edgeId)
+            tasks=get_Task_Assignment_From_Queue(request.edgeId,self.c)
             
             if tasks:
                 response = coordinator_pb2.TaskResponse(
@@ -116,29 +59,6 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
                 )
             yield response
           
-
-class JWTAuthInterceptor(grpc.ServerInterceptor):
-    def __init__(self, secret_key):
-        self.secret_key = secret_key
-
-    def intercept_service(self, continuation, handler_call_details):
-        metadata = dict(handler_call_details.invocation_metadata)
-        token = metadata.get('authorization')
-        if not token:
-            context = handler_call_details.invocation_metadata
-            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Authorization token is missing')
-        try:
-            jwt.decode(token, self.secret_key, algorithms=['HS256'])
-            # print(f"Authentication successful for token: {token}")
-            logging.info(f"Authentication successful for token: {token}")
-        except jwt.ExpiredSignatureError:
-            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Token has expired')
-            logging.info(f"Token has expired for token: {token}")
-        except jwt.InvalidTokenError:
-            context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Invalid token')
-            logging.info(f"Ivalid token: {token}")
-        return continuation(handler_call_details)
-
 
 def serve():
     load_dotenv()

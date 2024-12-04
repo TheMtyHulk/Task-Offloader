@@ -25,10 +25,10 @@ COPY . .
 COPY .env .env
 
 # Expose the port the app runs on
-EXPOSE 5002
+EXPOSE 3000
 
 # Define environment variable
-ENV PORT=5002
+ENV PORT=3000
 
 # Start the application
 CMD ["npm", "start"]

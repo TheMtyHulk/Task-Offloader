@@ -410,7 +410,7 @@ app.get("/filetype_count", async (req, res) => {
     return res.status(500).json({ err: err.message });
   }
 });
-const port = process.env.port || 5002;
+const port = process.env.port || 3000;
 
 // @route GET /file_sizes
 // @desc  Get file size in MB of each file and time to complete the task
