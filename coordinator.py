@@ -133,8 +133,10 @@ class JWTAuthInterceptor(grpc.ServerInterceptor):
             logging.info(f"Authentication successful for token: {token}")
         except jwt.ExpiredSignatureError:
             context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Token has expired')
+            logging.info(f"Token has expired for token: {token}")
         except jwt.InvalidTokenError:
             context.abort(grpc.StatusCode.UNAUTHENTICATED, 'Invalid token')
+            logging.info(f"Ivalid token: {token}")
         return continuation(handler_call_details)
 
 
