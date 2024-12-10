@@ -24,7 +24,7 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
         conn = sqlite3.connect('queue.db', check_same_thread=False)
         self.c = conn.cursor()
         #create worker pool and task queue tables if not exist
-        self.c.execute('''CREATE TABLE IF NOT EXISTS WORKER_POOL (EDGE_ID STRING PRIMARY KEY, TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+        self.c.execute('''CREATE TABLE IF NOT EXISTS WORKER_POOL (EDGE STRING PRIMARY KEY, TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP)''')
         self.c.execute('''CREATE TABLE IF NOT EXISTS TASK_QUEUE (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
         self.c.execute('''CREATE TABLE IF NOT EXISTS COMPUTATION_POWER(EDGE STRING PRIMARY KEY, POWER REAL)''')
        

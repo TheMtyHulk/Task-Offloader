@@ -57,7 +57,7 @@ def periodic_Worker_Pool_Check(conn, tasks_cluster):
             # Delete worker from pool if idle for more than 5 minutes
             timestamp = datetime.strptime(r[1], '%Y-%m-%d %H:%M:%S.%f')
             if (datetime.now() - timestamp).seconds > 180:
-                c.execute("DELETE FROM WORKER_POOL WHERE EDGE_ID=?", (r[0],))
+                c.execute("DELETE FROM WORKER_POOL WHERE EDGE=?", (r[0],))
                 conn.commit()
                 print(f"Worker {r[0]} removed from pool due to inactivity.")
                 # Delete tasks assigned to the worker
@@ -72,7 +72,7 @@ def periodic_Worker_Pool_Check(conn, tasks_cluster):
                     tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'assigned_to': None}})
                     c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t[0],))
                     conn.commit()
-                c.execute("DELETE FROM COMPUTATION_POWER WHERE EDGE_ID=?", (r[0],))
+                c.execute("DELETE FROM COMPUTATION_POWER WHERE EDGE=?", (r[0],))
                 conn.commit()
 
         print("Worker pool updated.")
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     c = conn.cursor()
     
     c.execute('''CREATE TABLE IF NOT EXISTS TASK_QUEUE (TASK_ID STRING PRIMARY KEY, EDGE STRING)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS WORKER_POOL (EDGE_ID STRING PRIMARY KEY, TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS WORKER_POOL (EDGE STRING PRIMARY KEY, TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     
     #start the periodic worker pool check thread
     time.sleep(2)
