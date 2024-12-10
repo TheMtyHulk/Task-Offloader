@@ -45,65 +45,51 @@ def get_Task_Size(undone_tasks, files) -> dict:
             file_lengths[ud] = file_length_mb
     return file_lengths
 
-def periodic_Worker_Pool_Check(conn,tasks_cluster):
-    
-    c=conn.cursor()
+def periodic_Worker_Pool_Check(conn, tasks_cluster):
+    c = conn.cursor()
     while True:
         # print("Executing periodic task")
-        edges=[]
-        row=c.execute("SELECT * FROM WORKER_POOL")
+        edges = []
+        row = c.execute("SELECT * FROM WORKER_POOL").fetchall()
 
         for r in row:
             edges.append(r[0])
-            #delete worker from pool if idle for more than 5 minutes
+            # Delete worker from pool if idle for more than 5 minutes
             timestamp = datetime.strptime(r[1], '%Y-%m-%d %H:%M:%S.%f')
-            if (datetime.now()-timestamp).seconds > 180:
+            if (datetime.now() - timestamp).seconds > 180:
                 c.execute("DELETE FROM WORKER_POOL WHERE EDGE_ID=?", (r[0],))
-                # NO_OF_EDGE_DEVICES -= 1
-            conn.commit()
-            print("Worker pool updated.")
-            #delete tasks assigned to the worker
-            task_ids = c.execute("SELECT TASK_ID FROM TASK_QUEUE WHERE EDGE=?", (r[0],)).fetchall()
-            if not task_ids:
-                continue
-            
-            #reset the task status
-            for t in task_ids:
-                
-                tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'started_at': None}})
-                tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'completed_at': None}})
-                tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'picked_at': None}})
-                tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'assigned_to': None}})
-                
-                c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t[0],))
                 conn.commit()
-                
-            x=c.execute("SELECT * FROM COMPUTATION_POWER")
-            
-            
-            for i in x:
-                if i[0]==r[0]:
-                    c.execute("DELETE FROM COMPUTATION_POWER WHERE EDGE=?", (r[0],))
+                print(f"Worker {r[0]} removed from pool due to inactivity.")
+                # Delete tasks assigned to the worker
+                task_ids = c.execute("SELECT TASK_ID FROM TASK_QUEUE WHERE EDGE=?", (r[0],)).fetchall()
+                if not task_ids:
+                    continue
+                # Reset the task status
+                for t in task_ids:
+                    tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'started_at': None}})
+                    tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'completed_at': None}})
+                    tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'picked_at': None}})
+                    tasks_cluster.update_one({'_id': ObjectId(t[0])}, {'$set': {'assigned_to': None}})
+                    c.execute("DELETE FROM TASK_QUEUE WHERE TASK_ID=?", (t[0],))
                     conn.commit()
-            
-            print(f"Worker {r[0]} removed from pool due to inactivity.")
+                c.execute("DELETE FROM COMPUTATION_POWER WHERE EDGE_ID=?", (r[0],))
+                conn.commit()
+
+        print("Worker pool updated.")
         
-        # row=c.execute("SELECT * FROM WORKER_POOL").fetchall()
         global NO_OF_EDGE_DEVICES
+        NO_OF_EDGE_DEVICES = len(edges)
         
-        if NO_OF_EDGE_DEVICES != len(edges):
-            NO_OF_EDGE_DEVICES = len(edges)
-        
-        sums=0
-        comps=c.execute("SELECT POWER FROM COMPUTATION_POWER ").fetchall()
+        sums = 0
+        comps = c.execute("SELECT POWER FROM COMPUTATION_POWER").fetchall()
         for i in comps:
-            sums+=i[0]
-        global edge_computation_power
-        if NO_OF_EDGE_DEVICES!=0:
-            edge_computation_power=round(sums/NO_OF_EDGE_DEVICES,2)
+            sums += i[0]
         
-       
-        time.sleep(30)  # Execute every 60 seconds
+        global edge_computation_power
+        if NO_OF_EDGE_DEVICES != 0:
+            edge_computation_power = round(sums / NO_OF_EDGE_DEVICES, 2)
+        
+        time.sleep(15)
 
 def get_New_Queue_conn(check_same_thrd=False):
     conn = sqlite3.connect('queue.db', check_same_thread=check_same_thrd)
