@@ -235,7 +235,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.post("/upload", upload.array("files", 10), (req, res) => {
+app.post("/upload", upload.array("files", 50), (req, res) => {
   // filter out the files that exceeds the size limit of 16 mb
   req.files.forEach(file => {
     file._id = uuidv4(); // Generate unique id using uuid
