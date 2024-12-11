@@ -63,7 +63,7 @@ class CoordinatorService(coordinator_pb2_grpc.CoordinatorServiceServicer):
 def serve():
     load_dotenv()
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), interceptors=[JWTAuthInterceptor(os.getenv('JWT_SECRET'))])
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=30), interceptors=[JWTAuthInterceptor(os.getenv('JWT_SECRET'))])
     coordinator_pb2_grpc.add_CoordinatorServiceServicer_to_server(CoordinatorService(), server)
     
     #load SSL/TLS certificate
