@@ -1,5 +1,5 @@
 ## usage of ssl keys 
-firstly configure the openssl.cnf file according to your needs and  the using these commands generate openssl keys
+firstly configure the openssl.cnf file according to your needs and then using these commands generate openssl keys
 
 ```
 openssl genpkey -algorithm RSA -out server.key
